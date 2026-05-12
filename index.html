@@ -258,9 +258,80 @@ textarea { resize: none; }
   pointer-events: none; z-index: 999; white-space: nowrap;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Lock screen */
+.lockscreen {
+  position: fixed; inset: 0; background: var(--bg); z-index: 2000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 32px 24px;
+}
+.lock-logo { margin-bottom: 32px; text-align: center; }
+.lock-logo-mark {
+  width: 72px; height: 72px; border-radius: 20px; background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -1px;
+  margin: 0 auto 14px;
+}
+.lock-logo h1 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.lock-logo p { font-size: 13px; color: var(--text2); }
+.pin-dots {
+  display: flex; gap: 14px; margin-bottom: 28px; justify-content: center;
+}
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--border2); background: transparent;
+  transition: background .15s, border-color .15s;
+}
+.pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+.pin-dot.error { background: var(--red); border-color: var(--red); }
+.pin-grid {
+  display: grid; grid-template-columns: repeat(3, 72px);
+  gap: 12px; justify-content: center; margin-bottom: 20px;
+}
+.pin-key {
+  width: 72px; height: 72px; border-radius: 50%; border: 1px solid var(--border2);
+  background: var(--surface); color: var(--text); font-size: 22px; font-weight: 500;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .1s;
+}
+.pin-key:active { background: var(--surface2); transform: scale(0.94); }
+.pin-key.del { font-size: 16px; color: var(--text2); }
+.pin-key.empty { border: none; background: transparent; pointer-events: none; }
+.lock-hint { font-size: 12px; color: var(--text3); text-align: center; margin-top: 8px; }
+.lock-error { font-size: 13px; color: var(--red); font-weight: 500; min-height: 20px; text-align: center; margin-bottom: 8px; }
 </style>
 </head>
 <body>
+
+<div class="lockscreen" id="lockscreen">
+  <div class="lock-logo">
+    <div class="lock-logo-mark">WCU</div>
+    <h1>Operation Log</h1>
+    <p>Well Cleanup AS — intern tilgang</p>
+  </div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="dot-0"></div>
+    <div class="pin-dot" id="dot-1"></div>
+    <div class="pin-dot" id="dot-2"></div>
+    <div class="pin-dot" id="dot-3"></div>
+  </div>
+  <div class="lock-error" id="lock-error"></div>
+  <div class="pin-grid">
+    <button class="pin-key" onclick="pinKey('1')">1</button>
+    <button class="pin-key" onclick="pinKey('2')">2</button>
+    <button class="pin-key" onclick="pinKey('3')">3</button>
+    <button class="pin-key" onclick="pinKey('4')">4</button>
+    <button class="pin-key" onclick="pinKey('5')">5</button>
+    <button class="pin-key" onclick="pinKey('6')">6</button>
+    <button class="pin-key" onclick="pinKey('7')">7</button>
+    <button class="pin-key" onclick="pinKey('8')">8</button>
+    <button class="pin-key" onclick="pinKey('9')">9</button>
+    <button class="pin-key empty"></button>
+    <button class="pin-key" onclick="pinKey('0')">0</button>
+    <button class="pin-key del" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="lock-hint">Skriv inn PIN-koden</div>
+</div>
 
 <div class="app-header">
   <div class="logo">
@@ -468,6 +539,55 @@ textarea { resize: none; }
 <input type="file" id="img-file-input" accept="image/*" style="display:none" onchange="handleImageFile(event)">
 
 <script>
+// ── PIN LOCK ──────────────────────────────────────────────
+const CORRECT_PIN = '2025';          // ← endre PIN her
+const SESSION_KEY = 'wcu_unlocked';  // cleared when tab closes
+
+let pinEntry = '';
+
+function pinKey(digit) {
+  if (pinEntry.length >= 4) return;
+  pinEntry += digit;
+  updateDots();
+  if (pinEntry.length === 4) setTimeout(checkPin, 120);
+}
+
+function pinDel() {
+  pinEntry = pinEntry.slice(0, -1);
+  updateDots();
+  document.getElementById('lock-error').textContent = '';
+}
+
+function updateDots(state) {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('dot-' + i);
+    d.className = 'pin-dot';
+    if (state === 'error') d.classList.add('error');
+    else if (i < pinEntry.length) d.classList.add('filled');
+  }
+}
+
+function checkPin() {
+  if (pinEntry === CORRECT_PIN) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    document.getElementById('lockscreen').style.display = 'none';
+  } else {
+    updateDots('error');
+    document.getElementById('lock-error').textContent = 'Feil PIN — prøv igjen';
+    setTimeout(() => {
+      pinEntry = '';
+      updateDots();
+      document.getElementById('lock-error').textContent = '';
+    }, 900);
+  }
+}
+
+// Check if already unlocked this session
+if (sessionStorage.getItem(SESSION_KEY) === '1') {
+  document.getElementById('lockscreen').style.display = 'none';
+}
+// ─────────────────────────────────────────────────────────
+
 const TASK_PLANS = {
   "SOP_005-101": {
     name: "Coflexip Deployment — Deck Winch",
