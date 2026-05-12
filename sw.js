@@ -1,10 +1,10 @@
 const CACHE = 'wcu-oplog-v2';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.svg',
-  '/icon-512.svg',
+  '/WCU-operationlogger/',
+  '/WCU-operationlogger/index.html',
+  '/WCU-operationlogger/manifest.json',
+  '/WCU-operationlogger/icon-192.svg',
+  '/WCU-operationlogger/icon-512.svg',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
 ];

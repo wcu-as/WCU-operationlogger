@@ -1249,7 +1249,7 @@ setInterval(() => {
 
 // PWA service worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.register('/WCU-operationlogger/sw.js', {scope: '/WCU-operationlogger/'}).catch(() => {});
 }
 </script>
 
