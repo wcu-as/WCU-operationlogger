@@ -372,6 +372,29 @@ textarea { resize: none; }
 
   <div class="card">
     <div class="card-title">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Task Plan
+    </div>
+    <div class="field">
+      <label>Velg innebygd plan</label>
+      <select id="taskplan-select" onchange="selectBuiltinPlan(this.value)">
+        <option value="">— Velg task plan —</option>
+        <option value="SOP_005-101">SOP_005-101 · Coflexip Deployment</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:8px 0">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span style="font-size:11px;color:var(--text3)">eller</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+    <button class="btn btn-outline" onclick="document.getElementById('taskplan-file-input').click()" style="font-size:13px;padding:9px">
+      <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Last opp task plan (.xlsx eller .json)
+    </button>
+    <input type="file" id="taskplan-file-input" accept=".xlsx,.xls,.json" style="display:none" onchange="loadTaskPlanFile(event)">
+    <div id="taskplan-loaded" style="display:none;margin-top:10px;padding:8px 12px;background:var(--green-bg);border:1px solid rgba(15,186,116,.25);border-radius:var(--radius);font-size:12px;color:var(--green);font-weight:500"></div>
+  </div>
+    <div class="card-title">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       Operasjonsinformasjon
     </div>
@@ -511,13 +534,6 @@ textarea { resize: none; }
       <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Kun CSV
     </button>
-  </div>
-
-  <div class="card" style="margin-top:4px">
-    <div class="card-title">Fremtid: Task plan bibliotek</div>
-    <p style="font-size:12px;color:var(--text2);line-height:1.6">
-      I neste versjon kan du lagre task plans som JSON-filer og laste dem inn i appen. Mappen <strong style="color:var(--text);font-weight:600">task-plans/</strong> ved siden av denne HTML-filen kan inneholde én fil per operasjonstype (f.eks. <code style="font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:4px;color:#7db3ff">coflexip-deployment.json</code>, <code style="font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:4px;color:#7db3ff">stim.json</code>).
-    </p>
   </div>
 
   <div class="card">
@@ -670,14 +686,139 @@ let appState = {
   opData: {},
   logs: [],
   freeNotes: [],
-  images: [],        // {id, ownerKey, filename, dataUrl, time}
+  images: [],
   activeComment: null,
   commentDraft: '',
   taskPlan: null,
   freeNoteOpen: false,
   freeNoteDraft: '',
-  pendingImageKey: null   // key of step/note waiting for image attach
+  pendingImageKey: null
 };
+
+// ── AUTO-SAVE ─────────────────────────────────────────────
+const SAVE_KEY = 'wcu_oplog_state';
+
+function saveState() {
+  try {
+    const s = {
+      started: appState.started,
+      startTime: appState.startTime ? appState.startTime.toISOString() : null,
+      opData: appState.opData,
+      logs: appState.logs.map(l => ({...l, time: l.time.toISOString()})),
+      freeNotes: appState.freeNotes.map(n => ({...n, time: n.time.toISOString()})),
+      images: appState.images.map(i => ({...i, time: i.time.toISOString()})),
+      taskPlan: appState.taskPlan
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+  } catch(e) { console.warn('Auto-save feilet:', e); }
+}
+
+function restoreState() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    if (!s.started) return false;
+    appState.started = true;
+    appState.startTime = new Date(s.startTime);
+    appState.opData = s.opData || {};
+    appState.logs = (s.logs || []).map(l => ({...l, time: new Date(l.time)}));
+    appState.freeNotes = (s.freeNotes || []).map(n => ({...n, time: new Date(n.time)}));
+    appState.images = (s.images || []).map(i => ({...i, time: new Date(i.time)}));
+    appState.taskPlan = s.taskPlan || null;
+    return true;
+  } catch(e) { return false; }
+}
+
+// Patch all state-modifying functions to auto-save
+const _origLogStep_save = logStep;
+// Auto-save is injected at call sites via wrapSave()
+function wrapSave(fn) {
+  return function(...args) { fn.apply(this, args); saveState(); };
+}
+// ─────────────────────────────────────────────────────────
+
+// ── TASK PLAN LOADING ────────────────────────────────────
+function selectBuiltinPlan(ref) {
+  if (!ref) return;
+  appState.taskPlan = TASK_PLANS[ref] || null;
+  if (appState.taskPlan) {
+    showTaskPlanLoaded(appState.taskPlan.name);
+    // auto-fill ref field
+    document.getElementById('op-ref').value = ref;
+  }
+}
+
+function showTaskPlanLoaded(name) {
+  const el = document.getElementById('taskplan-loaded');
+  el.style.display = 'block';
+  el.textContent = '✓ Lastet: ' + name;
+}
+
+function loadTaskPlanFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'json') {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const plan = JSON.parse(ev.target.result);
+        if (!plan.name || !plan.phases) throw new Error('Ugyldig format');
+        appState.taskPlan = plan;
+        showTaskPlanLoaded(plan.name);
+        document.getElementById('op-ref').value = plan.ref || file.name.replace('.json','');
+        showToast('Task plan lastet ✓');
+      } catch(err) { showToast('Ugyldig JSON-fil', true); }
+    };
+    reader.readAsText(file);
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const wb = XLSX.read(ev.target.result, {type:'array'});
+        const plan = xlsxToTaskPlan(wb, file.name);
+        appState.taskPlan = plan;
+        showTaskPlanLoaded(plan.name);
+        document.getElementById('op-ref').value = plan.ref || file.name.replace(/\.[^.]+$/,'');
+        showToast('Task plan lastet fra Excel ✓');
+      } catch(err) { showToast('Kunne ikke lese Excel-filen: ' + err.message, true); }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+  e.target.value = '';
+}
+
+function xlsxToTaskPlan(wb, filename) {
+  // Expected Excel format:
+  // Sheet 1: col A = Phase name (merged/repeated), col B = Step description
+  // Row 1 = header (skipped), subsequent rows = steps
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+  if (rows.length < 2) throw new Error('Tom fil');
+
+  const planName = wb.SheetNames[0] || filename.replace(/\.[^.]+$/,'');
+  const phases = [];
+  let currentPhase = null;
+
+  rows.slice(1).forEach(row => {
+    const phase = String(row[0] || '').trim();
+    const step  = String(row[1] || '').trim();
+    if (!step) return;
+    if (phase && (!currentPhase || currentPhase.name !== phase)) {
+      currentPhase = { name: phase, steps: [] };
+      phases.push(currentPhase);
+    } else if (!currentPhase) {
+      currentPhase = { name: 'Steg', steps: [] };
+      phases.push(currentPhase);
+    }
+    currentPhase.steps.push(step);
+  });
+
+  if (!phases.length) throw new Error('Ingen steg funnet');
+  return { name: planName, ref: planName, phases };
+}
+// ─────────────────────────────────────────────────────────
 
 function getOpData() {
   return {
@@ -725,6 +866,7 @@ function startOperation() {
     </button>`;
   switchTab('log');
   renderLog();
+  saveState();
   showToast('Operasjon startet ✓');
 }
 
@@ -744,6 +886,7 @@ function logStep(phaseIdx, stepIdx) {
   appState.logs.push({ key, phaseIdx, stepIdx, time: now, comment: '' });
   appState.activeComment = key;
   appState.commentDraft = '';
+  saveState();
   renderLog();
 }
 
@@ -763,6 +906,7 @@ function saveComment(key) {
   if (log) log.comment = appState.commentDraft;
   appState.activeComment = null;
   appState.commentDraft = '';
+  saveState();
   renderLog();
   showToast('Kommentar lagret ✓');
 }
@@ -774,6 +918,7 @@ function addFreeNote() {
   appState.freeNotes.push({ id: 'fn-' + Date.now(), time: new Date(), text, stepKey });
   appState.activeComment = null;
   appState.freeNoteDraft = '';
+  saveState();
   renderLog();
   showToast('Notat logget ✓');
 }
@@ -807,6 +952,7 @@ function handleImageFile(e) {
       time: new Date()
     });
     appState.pendingImageKey = null;
+    saveState();
     renderLog();
     showToast('Bilde lagt til ✓');
   };
@@ -1207,6 +1353,7 @@ async function shareLog() {
 function resetOperation() {
   if (!confirm('Nullstill og starte ny operasjon? Eksportér loggen først!')) return;
   appState = { started: false, startTime: null, opData: {}, logs: [], freeNotes: [], images: [], activeComment: null, commentDraft: '', taskPlan: null, freeNoteOpen: false, freeNoteDraft: '', pendingImageKey: null };
+  localStorage.removeItem(SAVE_KEY);
   document.getElementById('live-badge').style.display = 'none';
   document.getElementById('start-btn-area').innerHTML = `
     <button class="btn btn-primary" onclick="startOperation()">
@@ -1238,6 +1385,35 @@ if (!navigator.share) {
     btn.title = 'Krever Safari (iOS) eller Chrome (Android)';
   }
 }
+
+// ── RESTORE saved state on load ───────────────────────────
+if (restoreState()) {
+  document.getElementById('live-badge').style.display = 'flex';
+  document.getElementById('start-btn-area').innerHTML = `
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:6px">⚡ Pågående operasjon gjenopprettet</div>
+      <div style="font-size:12px;color:var(--text2)">${appState.opData.project || ''} · ${appState.logs.length} steg logget</div>
+    </div>
+    <button class="btn btn-outline" onclick="switchTab('log')" style="color:var(--green);border-color:rgba(15,186,116,.3);margin-bottom:8px">
+      <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+      Fortsett operasjon
+    </button>`;
+  // Restore form fields
+  const d = appState.opData;
+  if (d.date) document.getElementById('op-date').value = d.date;
+  if (d.project) document.getElementById('op-project').value = d.project;
+  if (d.vessel) document.getElementById('op-vessel').value = d.vessel;
+  if (d.type) document.getElementById('op-type').value = d.type;
+  if (d.ref) document.getElementById('op-ref').value = d.ref;
+  if (d.supDay) document.getElementById('sup-day').value = d.supDay;
+  if (d.supNight) document.getElementById('sup-night').value = d.supNight;
+  if (d.opDay1) document.getElementById('op-day1').value = d.opDay1;
+  if (d.opDay2) document.getElementById('op-day2').value = d.opDay2;
+  if (d.opNight1) document.getElementById('op-night1').value = d.opNight1;
+  if (d.opNight2) document.getElementById('op-night2').value = d.opNight2;
+  if (appState.taskPlan) showTaskPlanLoaded(appState.taskPlan.name);
+}
+// ─────────────────────────────────────────────────────────
 
 // Refresh elapsed every 30s when on log tab
 setInterval(() => {
