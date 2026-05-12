@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WCU OpLog">
+<meta name="theme-color" content="#0a1628">
+<link rel="manifest" href="manifest.json">
+<title>WCU Operation Log</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root {
+  --bg: #0a1628;
+  --surface: #111e35;
+  --surface2: #172542;
+  --border: rgba(100,160,255,0.12);
+  --border2: rgba(100,160,255,0.22);
+  --accent: #2e7df7;
+  --accent2: #1a5cc4;
+  --green: #0fba74;
+  --green-bg: rgba(15,186,116,0.1);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245,158,11,0.1);
+  --red: #ef4444;
+  --text: #e8edf8;
+  --text2: #8899bb;
+  --text3: #4d6080;
+  --radius: 10px;
+  --radius-lg: 16px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, 'SF Pro Text', BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; overscroll-behavior: none; }
+body { display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; }
+
+/* Header */
+.app-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.app-header .logo { display: flex; align-items: center; gap: 10px; }
+.app-header .logo-mark {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: var(--accent); display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: #fff; letter-spacing: -0.5px;
+}
+.app-header .logo-text { font-size: 14px; font-weight: 600; color: var(--text); }
+.app-header .logo-sub { font-size: 11px; color: var(--text2); }
+.live-badge {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--green-bg); border: 1px solid rgba(15,186,116,0.25);
+  border-radius: 20px; padding: 4px 10px; font-size: 11px; color: var(--green); font-weight: 600;
+}
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* Tab bar */
+.tab-bar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; flex-shrink: 0;
+}
+.tab-btn {
+  flex: 1; padding: 12px 4px 10px; text-align: center; font-size: 11px; font-weight: 500;
+  color: var(--text3); border: none; background: none; cursor: pointer;
+  border-bottom: 2px solid transparent; transition: color .2s, border-color .2s;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.tab-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Scrollable content */
+.content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px; }
+.pane { display: none; }
+.pane.active { display: block; }
+
+/* Cards */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 12px;
+}
+.card-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--text2); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+}
+.card-title svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+/* Form elements */
+label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 5px; }
+input[type=text], input[type=date], select, textarea {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 10px 12px; font-size: 14px; color: var(--text);
+  font-family: inherit; outline: none; -webkit-appearance: none; appearance: none;
+}
+input[type=text]:focus, input[type=date]:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+}
+select option { background: var(--surface2); }
+textarea { resize: none; }
+.field { margin-bottom: 12px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+
+/* Buttons */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 11px 18px; border-radius: var(--radius); font-size: 14px; font-weight: 600;
+  cursor: pointer; border: none; transition: opacity .15s, transform .1s; width: 100%;
+}
+.btn:active { transform: scale(0.97); opacity: .85; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-success { background: var(--green); color: #fff; }
+.btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+.btn-small {
+  padding: 7px 12px; font-size: 12px; font-weight: 500; border-radius: 8px;
+  cursor: pointer; border: 1px solid var(--border2); background: transparent; color: var(--text2);
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.btn-small.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-small svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+/* Step rows */
+.step-row {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px;
+  transition: border-color .2s, background .2s;
+}
+.step-row.done { border-left: 3px solid var(--green); }
+.step-row.comment-open { border-color: var(--accent); }
+.step-header { display: flex; align-items: center; gap: 10px; }
+.step-num {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--surface);
+  border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600; color: var(--text3); flex-shrink: 0;
+}
+.step-row.done .step-num { background: var(--green-bg); border-color: rgba(15,186,116,.4); color: var(--green); }
+.step-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.3; }
+.step-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.step-time { font-size: 11px; color: var(--green); font-weight: 600; }
+.step-time.pending { color: var(--text3); }
+.log-btn {
+  background: var(--accent); color: #fff; border: none; border-radius: 7px;
+  padding: 5px 11px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.log-btn:active { opacity: .8; }
+.comment-btn {
+  background: transparent; border: 1px solid var(--border2); border-radius: 7px;
+  padding: 5px 8px; cursor: pointer; color: var(--text2); display: flex; align-items: center;
+}
+.comment-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.comment-btn.has-comment { border-color: rgba(46,125,247,.4); color: var(--accent); }
+.step-comment-box { margin-top: 10px; }
+.step-comment-box textarea { font-size: 12px; padding: 8px 10px; }
+.comment-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 7px; }
+.step-comment-text { font-size: 11px; color: var(--text2); font-style: italic; margin-top: 6px; padding: 5px 8px; background: rgba(46,125,247,.07); border-radius: 6px; border-left: 2px solid rgba(46,125,247,.3); }
+
+/* Phase headers */
+.phase-header {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--accent); margin: 18px 0 10px; display: flex; align-items: center; gap: 8px;
+}
+.phase-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Elapsed bar */
+.elapsed-bar {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;
+}
+.elapsed-label { font-size: 11px; color: var(--text3); }
+.elapsed-val { font-size: 15px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.step-count { font-size: 11px; color: var(--text2); font-weight: 500; }
+
+/* Log entries */
+.log-entry {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 14px; margin-bottom: 8px;
+  border-left: 3px solid var(--green);
+}
+.le-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+.le-step { font-size: 12px; font-weight: 600; color: var(--text); }
+.le-time { font-size: 12px; color: var(--green); font-weight: 600; font-variant-numeric: tabular-nums; }
+.le-delta { font-size: 11px; color: var(--text3); margin-bottom: 2px; }
+.le-comment { font-size: 11px; color: var(--text2); font-style: italic; margin-top: 4px; }
+
+/* Op info summary */
+.op-summary {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 14px 16px; margin-bottom: 14px;
+}
+.op-summary .title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.op-summary .sub { font-size: 12px; color: var(--text2); }
+.op-summary .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.tag {
+  font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px;
+  background: var(--surface2); border: 1px solid var(--border2); color: var(--text2);
+}
+.tag.accent { background: rgba(46,125,247,.12); border-color: rgba(46,125,247,.3); color: #7db3ff; }
+
+/* Setup personnel grid */
+.personnel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Export section */
+.export-row { display: flex; gap: 10px; margin-top: 14px; }
+.export-row .btn { flex: 1; }
+
+/* Screen: start prompt */
+.start-screen {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 400px; text-align: center; padding: 24px;
+}
+.start-screen .icon { font-size: 48px; margin-bottom: 16px; }
+.start-screen h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.start-screen p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+/* Divider */
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+/* Image thumbnails */
+.img-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.img-thumb {
+  width: 64px; height: 64px; border-radius: 8px; object-fit: cover;
+  border: 1px solid var(--border2); cursor: pointer; flex-shrink: 0;
+}
+.img-thumb-wrap { position: relative; }
+.img-del-btn {
+  position: absolute; top: -5px; right: -5px; width: 18px; height: 18px;
+  background: var(--red); border: none; border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+}
+.img-del-btn svg { width: 10px; height: 10px; stroke: #fff; fill: none; stroke-width: 2.5; }
+.img-add-btn {
+  width: 64px; height: 64px; border-radius: 8px; border: 1px dashed var(--border2);
+  background: var(--surface2); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text3); flex-shrink: 0;
+}
+.img-add-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.img-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Lightbox */
+.lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 1000;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.lightbox img { max-width: 100%; max-height: 90vh; border-radius: 10px; object-fit: contain; }
+.lightbox-close {
+  position: absolute; top: 16px; right: 16px; width: 36px; height: 36px;
+  background: rgba(255,255,255,.12); border: none; border-radius: 50%;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.lightbox-close svg { width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2; }
+.toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--green); color: #fff; border-radius: 20px; padding: 8px 18px;
+  font-size: 12px; font-weight: 600; opacity: 0; transition: opacity .3s, transform .3s;
+  pointer-events: none; z-index: 999; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="logo">
+    <div class="logo-mark">WCU</div>
+    <div>
+      <div class="logo-text">Operation Log</div>
+      <div class="logo-sub">Well Cleanup AS</div>
+    </div>
+  </div>
+  <div class="live-badge" id="live-badge" style="display:none">
+    <div class="live-dot"></div>LIVE
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('setup')" id="tab-setup">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    Oppsett
+  </button>
+  <button class="tab-btn" onclick="switchTab('log')" id="tab-log">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+    Logg
+  </button>
+  <button class="tab-btn" onclick="switchTab('overview')" id="tab-overview">
+    <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    Oversikt
+  </button>
+  <button class="tab-btn" onclick="switchTab('export')" id="tab-export">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Eksport
+  </button>
+</div>
+
+<div class="content">
+
+<!-- SETUP PANE -->
+<div class="pane active" id="pane-setup">
+
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Operasjonsinformasjon
+    </div>
+    <div class="field">
+      <label>Dato</label>
+      <input type="date" id="op-date">
+    </div>
+    <div class="field">
+      <label>Project / Felt</label>
+      <input type="text" id="op-project" placeholder="f.eks. Skandi Installer — Blokk 15">
+    </div>
+    <div class="field">
+      <label>Fartøy (Vessel)</label>
+      <input type="text" id="op-vessel" placeholder="f.eks. Skandi Installer">
+    </div>
+    <div class="field">
+      <label>Operasjon</label>
+      <select id="op-type">
+        <option value="">Velg operasjon...</option>
+        <option>Stim</option>
+        <option>Re-stim</option>
+        <option>Scale squeeze</option>
+        <option>Coflexip Deployment</option>
+        <option>Coflexip Recovery</option>
+        <option>Annet</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Referansenummer (SOP / WO)</label>
+      <input type="text" id="op-ref" value="SOP_005-101" placeholder="f.eks. SOP_005-101">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Personell
+    </div>
+    <div class="divider" style="margin-top:0"></div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Dagvakt</div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0">
+        <label>Supervisor dag</label>
+        <input type="text" id="sup-day" placeholder="Navn">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Supervisor natt</label>
+        <input type="text" id="sup-night" placeholder="Navn">
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:12px 0 8px">Operatører dag</div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0">
+        <label>Operator dag 1</label>
+        <input type="text" id="op-day1" placeholder="Navn">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Operator dag 2</label>
+        <input type="text" id="op-day2" placeholder="Navn">
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:12px 0 8px">Operatører natt</div>
+    <div class="field-row">
+      <div class="field" style="margin-bottom:0">
+        <label>Operator natt 1</label>
+        <input type="text" id="op-night1" placeholder="Navn">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Operator natt 2</label>
+        <input type="text" id="op-night2" placeholder="Navn">
+      </div>
+    </div>
+  </div>
+
+  <div id="start-btn-area">
+    <button class="btn btn-primary" onclick="startOperation()">
+      <svg style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+      Start operasjon
+    </button>
+  </div>
+
+</div>
+
+<!-- LOG PANE -->
+<div class="pane" id="pane-log">
+  <div id="log-content">
+    <div class="start-screen">
+      <div class="icon">🔧</div>
+      <h2>Klar til start</h2>
+      <p>Fyll inn operasjonsinformasjon og personell i Oppsett, deretter trykk Start operasjon.</p>
+    </div>
+  </div>
+</div>
+
+<!-- OVERVIEW PANE -->
+<div class="pane" id="pane-overview">
+  <div id="overview-content">
+    <div class="start-screen">
+      <div class="icon">📋</div>
+      <h2>Ingen data ennå</h2>
+      <p>Start en operasjon og logg hendelser — de vises her.</p>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT PANE -->
+<div class="pane" id="pane-export">
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Del og eksporter
+    </div>
+    <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px">
+      Del åpner Teams, e-post, AirDrop eller andre apper direkte. Zip-pakken inneholder Excel + alle bilder med klikkbare lenker.
+    </p>
+
+    <button class="btn btn-primary" id="share-btn" onclick="shareLog()">
+      <svg style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Del via Teams / e-post / AirDrop
+    </button>
+    <div id="share-unavailable" style="display:none;font-size:12px;color:var(--text3);margin-top:6px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);line-height:1.5">
+      Deling ikke støttet i denne nettleseren. Bruk nedlasting nedenfor og del filen manuelt.
+    </div>
+
+    <div style="margin-top:10px"></div>
+    <button class="btn btn-success" onclick="exportZip()">
+      <svg style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Last ned ZIP (Excel + bilder)
+    </button>
+    <div style="margin-top:10px"></div>
+    <button class="btn btn-outline" onclick="exportXLSX()">
+      <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Kun Excel (.xlsx)
+    </button>
+    <div style="margin-top:10px"></div>
+    <button class="btn btn-outline" onclick="exportCSV()">
+      <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Kun CSV
+    </button>
+  </div>
+
+  <div class="card" style="margin-top:4px">
+    <div class="card-title">Fremtid: Task plan bibliotek</div>
+    <p style="font-size:12px;color:var(--text2);line-height:1.6">
+      I neste versjon kan du lagre task plans som JSON-filer og laste dem inn i appen. Mappen <strong style="color:var(--text);font-weight:600">task-plans/</strong> ved siden av denne HTML-filen kan inneholde én fil per operasjonstype (f.eks. <code style="font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:4px;color:#7db3ff">coflexip-deployment.json</code>, <code style="font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:4px;color:#7db3ff">stim.json</code>).
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Reset operasjon</div>
+    <button class="btn btn-outline" style="color:var(--red);border-color:rgba(239,68,68,.3)" onclick="resetOperation()">
+      <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+      Nullstill og start ny operasjon
+    </button>
+  </div>
+</div>
+
+</div><!-- end .content -->
+
+<div class="toast" id="toast"></div>
+<div class="lightbox" id="lightbox" style="display:none" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+<input type="file" id="img-file-input" accept="image/*" style="display:none" onchange="handleImageFile(event)">
+
+<script>
+const TASK_PLANS = {
+  "SOP_005-101": {
+    name: "Coflexip Deployment — Deck Winch",
+    phases: [
+      {
+        name: "5.1 Pre-operasjon",
+        steps: [
+          "Snatch blocks installert iht. riggeskisse",
+          "Chute deployert iht. løfteplan og riggeskisse",
+          "Chute rigging frakoblet og sikret skipside med karabiner",
+          "Pre-operasjon sjekk utført på dekksvinsk",
+          "Maks trykk på HPU justert — bekreft trekkraft med loadcell",
+          "Betal ut på vinsk til tilstrekkelig lengde for threading gjennom snatch blocks",
+          "Rope threades fra vinsk gjennom snatch block på chute ankerpunkt — bekreft sete i spor",
+          "Rope threades gjennom snatch block på IMR-reel toppramme — bekreft sete og lås",
+          "Kran koblet til IMR-hose rigging",
+          "Kran løfter og strekker med 100T",
+          "Sjøfastgjøring på IMR-stab fjernet",
+          "Kran løfter og svinges over bord"
+        ]
+      },
+      {
+        name: "5.2 Buoyancy inn i spooling device",
+        steps: [
+          "IMR-reel reeles ut forsiktig",
+          "Tilstrekkelig slack reelet ut — kran senker IMR-hose mot chute, standby",
+          "IMR-reel isolert — Emergency Stop aktivert",
+          "Inngang IMR-reel gjennom adkomstdør",
+          "3T 2m myk stropp plassert rundt buoyancy i choke-konfigurasjon — bekreft stropp sitter stramt",
+          "Vinsk-hook festet til choke-løkke iht. riggeskisse — bekreft hook-leppe er sikret/låst",
+          "Ut av IMR-reel gjennom adkomstdøren",
+          "Bekreft alt personell er utenfor snapback-sone",
+          "Ta inn slack på vinsk-rope inntil lett spenning — bekreft rope løper greit i snatch block",
+          "Vinsk assisterer reel-operator med å entre buoyancy i spooling device",
+          "Når rope-vinkel er i nøytral posisjon — vinsk-operator betaler ut og holder slack",
+          "Kontrollert STOPP — koble fra vinsk og sikre vinsk-hook"
+        ]
+      },
+      {
+        name: "5.3 Hose deployment — Step and Grip",
+        steps: [
+          "Deployment stanset — initierer step-and-grip syklus",
+          "Isoler vinsk og IMR-reel",
+          "Inngang IMR-reel gjennom adkomstdør",
+          "Koble fra og fjern vinsk-rope fra IMR-reel snatch block",
+          "Ut av IMR-reel gjennom adkomstdøren",
+          "Reposisjoner myk stropp nær IMR-reel spooling device — bekreft choke er sikker",
+          "Vinsk-hook festet til choke-løkke — bekreft hook-leppe låst",
+          "Bekreft alt personell utenfor snapback-sone",
+          "Vinsk-operator engasjerer vinsk sakte — kontrollert, jevn trekkhastighet",
+          "IMR-reel operator følger opp og unngår for mye slack",
+          "Deck Sup. monitorerer hose, stropp, snatch block og rope kontinuerlig",
+          "Fortsetter pulling inntil: (a) maks rope-travel, ELLER (b) stropp innen 0,5 m fra snatch block — STOPP",
+          "Vinsk-operator stopper — bremse engasjert — rope beholder noe spenning",
+          "IMR-reel operator STOPP — Emergency Stop aktivert",
+          "SLACK signal — vinsk-operator betaler ut rope til slack",
+          "Reposisjoner myk stropp — bekreft choke sikker",
+          "Soner klare bekreftet — PULL signal gitt",
+          "Syklus fullført — hose deployer av seg selv ELLER endposisjon nådd"
+        ]
+      },
+      {
+        name: "5.4 Rigg ned",
+        steps: [
+          "Tilstrekkelig hose-lengde ute — STOPP signal — vinsk stopper og brems satt",
+          "Slack vinsk-rope",
+          "Myk stropp frakoblet fra hose",
+          "De-rigg dekksvinsk-rope — alt riggingsutstyr gjenvunnet",
+          "Post-operasjon logg-innlegg fullført: tid, avvik og nær-uhell",
+          "Eventuelle hendelser eller nær-uhell rapportert i WCU QHSE-systemet"
+        ]
+      }
+    ]
+  }
+};
+
+let appState = {
+  started: false,
+  startTime: null,
+  opData: {},
+  logs: [],
+  freeNotes: [],
+  images: [],        // {id, ownerKey, filename, dataUrl, time}
+  activeComment: null,
+  commentDraft: '',
+  taskPlan: null,
+  freeNoteOpen: false,
+  freeNoteDraft: '',
+  pendingImageKey: null   // key of step/note waiting for image attach
+};
+
+function getOpData() {
+  return {
+    date: document.getElementById('op-date').value,
+    project: document.getElementById('op-project').value,
+    vessel: document.getElementById('op-vessel').value,
+    type: document.getElementById('op-type').value,
+    ref: document.getElementById('op-ref').value,
+    supDay: document.getElementById('sup-day').value,
+    supNight: document.getElementById('sup-night').value,
+    opDay1: document.getElementById('op-day1').value,
+    opDay2: document.getElementById('op-day2').value,
+    opNight1: document.getElementById('op-night1').value,
+    opNight2: document.getElementById('op-night2').value
+  };
+}
+
+function formatTime(d) {
+  return d.toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+function formatDate(d) {
+  return d.toLocaleDateString('no-NO', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+function formatElapsed(ms) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(m / 60);
+  if (h > 0) return `${h}t ${m % 60}m`;
+  return `${m}m ${s % 60}s`;
+}
+
+function startOperation() {
+  const d = getOpData();
+  if (!d.project) { showToast('Fyll inn prosjektnavn', true); return; }
+  appState.opData = d;
+  appState.startTime = new Date();
+  appState.started = true;
+  const ref = d.ref || 'SOP_005-101';
+  appState.taskPlan = TASK_PLANS[ref] || TASK_PLANS['SOP_005-101'];
+  document.getElementById('live-badge').style.display = 'flex';
+  document.getElementById('start-btn-area').innerHTML = `
+    <button class="btn btn-outline" onclick="switchTab('log')" style="color:var(--green);border-color:rgba(15,186,116,.3)">
+      <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+      Operasjon pågår — gå til logg
+    </button>`;
+  switchTab('log');
+  renderLog();
+  showToast('Operasjon startet ✓');
+}
+
+function switchTab(name) {
+  ['setup','log','overview','export'].forEach(t => {
+    document.getElementById('pane-' + t).classList.toggle('active', t === name);
+    document.getElementById('tab-' + t).classList.toggle('active', t === name);
+  });
+  if (name === 'log' && appState.started) renderLog();
+  if (name === 'overview' && appState.started) renderOverview();
+}
+
+function logStep(phaseIdx, stepIdx) {
+  const key = `${phaseIdx}-${stepIdx}`;
+  if (appState.logs.find(l => l.key === key)) return;
+  const now = new Date();
+  appState.logs.push({ key, phaseIdx, stepIdx, time: now, comment: '' });
+  appState.activeComment = key;
+  appState.commentDraft = '';
+  renderLog();
+}
+
+function toggleComment(key) {
+  if (appState.activeComment === key) {
+    appState.activeComment = null;
+  } else {
+    const log = appState.logs.find(l => l.key === key);
+    appState.activeComment = key;
+    appState.commentDraft = log ? log.comment : '';
+  }
+  renderLog();
+}
+
+function saveComment(key) {
+  const log = appState.logs.find(l => l.key === key);
+  if (log) log.comment = appState.commentDraft;
+  appState.activeComment = null;
+  appState.commentDraft = '';
+  renderLog();
+  showToast('Kommentar lagret ✓');
+}
+
+function addFreeNote() {
+  const text = appState.freeNoteDraft.trim();
+  if (!text) { showToast('Skriv inn en kommentar først', true); return; }
+  const stepKey = appState.activeComment || null;
+  appState.freeNotes.push({ id: 'fn-' + Date.now(), time: new Date(), text, stepKey });
+  appState.activeComment = null;
+  appState.freeNoteDraft = '';
+  renderLog();
+  showToast('Notat logget ✓');
+}
+
+function deleteFreeNote(id) {
+  appState.freeNotes = appState.freeNotes.filter(n => n.id !== id);
+  renderLog();
+}
+
+function openImagePicker(ownerKey) {
+  appState.pendingImageKey = ownerKey;
+  const inp = document.getElementById('img-file-input');
+  inp.value = '';
+  inp.click();
+}
+
+function handleImageFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
+    const safeKey = (appState.pendingImageKey || 'misc').replace(/[^a-z0-9\-]/gi, '_');
+    const timestamp = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+    const filename = `${safeKey}_${timestamp}.${ext}`;
+    appState.images.push({
+      id: 'img-' + Date.now(),
+      ownerKey: appState.pendingImageKey,
+      filename,
+      dataUrl: ev.target.result,
+      time: new Date()
+    });
+    appState.pendingImageKey = null;
+    renderLog();
+    showToast('Bilde lagt til ✓');
+  };
+  reader.readAsDataURL(file);
+}
+
+function deleteImage(id) {
+  appState.images = appState.images.filter(i => i.id !== id);
+  renderLog();
+}
+
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').style.display = 'flex';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').style.display = 'none';
+}
+
+function renderImageStrip(ownerKey) {
+  const imgs = appState.images.filter(i => i.ownerKey === ownerKey);
+  return `<div class="img-strip">
+    ${imgs.map(img => `
+      <div class="img-thumb-wrap">
+        <img class="img-thumb" src="${img.dataUrl}" onclick="openLightbox('${img.dataUrl}')" title="${img.filename}">
+        <button class="img-del-btn" onclick="deleteImage('${img.id}')">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`).join('')}
+    <div class="img-add-btn" onclick="openImagePicker('${ownerKey}')" title="Legg til bilde">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    </div>
+  </div>`;
+}
+
+function renderLog() {
+  if (!appState.started) return;
+  const plan = appState.taskPlan;
+  const elapsed = formatElapsed(new Date() - appState.startTime);
+  const totalSteps = plan.phases.reduce((a, p) => a + p.steps.length, 0);
+  const doneSteps = appState.logs.length;
+  const noteCount = appState.freeNotes.length;
+
+  let html = `
+    <div class="op-summary">
+      <div class="title">${plan.name}</div>
+      <div class="sub">${appState.opData.project} · ${appState.opData.vessel}</div>
+      <div class="tags">
+        <span class="tag accent">${appState.opData.type || 'Operasjon'}</span>
+        <span class="tag">Start ${formatTime(appState.startTime)}</span>
+        <span class="tag">${appState.opData.supDay || '—'} (dag)</span>
+      </div>
+    </div>
+    <div class="elapsed-bar">
+      <div>
+        <div class="elapsed-label">Tid siden start</div>
+        <div class="elapsed-val" id="elapsed-live">${elapsed}</div>
+      </div>
+      <div class="step-count">${doneSteps} / ${totalSteps} steg${noteCount ? ` · ${noteCount} notat` : ''}</div>
+    </div>`;
+
+  plan.phases.forEach((phase, pi) => {
+    html += `<div class="phase-header">${phase.name}</div>`;
+    phase.steps.forEach((step, si) => {
+      const key = `${pi}-${si}`;
+      const noteKey = `note-${pi}-${si}`;
+      const log = appState.logs.find(l => l.key === key);
+      const isCommentOpen = appState.activeComment === key;
+      const isNoteOpen = appState.activeComment === noteKey;
+      const isDone = !!log;
+      html += `<div class="step-row${isDone ? ' done' : ''}${isCommentOpen || isNoteOpen ? ' comment-open' : ''}">
+        <div class="step-header">
+          <div class="step-num">${si + 1}</div>
+          <div class="step-name">${step}</div>
+          <div class="step-meta">
+            ${isDone
+              ? `<span class="step-time">${formatTime(log.time)}</span>
+                 <button class="comment-btn${log.comment ? ' has-comment' : ''}" onclick="toggleComment('${key}')" title="Kommentar til steg">
+                   <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                 </button>`
+              : `<span class="step-time pending">—</span>
+                 <button class="log-btn" onclick="logStep(${pi}, ${si})">Logg</button>`}
+            <button class="comment-btn${isNoteOpen ? ' has-comment' : ''}" onclick="toggleComment('${noteKey}')" title="Legg til notat" style="${isNoteOpen ? 'border-color:rgba(245,158,11,.5);color:var(--amber)' : ''}">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button class="comment-btn${appState.images.filter(i=>i.ownerKey===key).length ? ' has-comment' : ''}" onclick="openImagePicker('${key}')" title="Legg til bilde" style="${appState.images.filter(i=>i.ownerKey===key).length ? 'border-color:rgba(46,125,247,.4);color:var(--accent)' : ''}">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </button>
+          </div>
+        </div>
+        ${isDone && log.comment && !isCommentOpen ? `<div class="step-comment-text">"${log.comment}"</div>` : ''}
+        ${isCommentOpen ? `<div class="step-comment-box">
+          <textarea rows="3" placeholder="Kommentar for dette steget..." oninput="appState.commentDraft=this.value">${appState.commentDraft}</textarea>
+          <div class="comment-actions">
+            <button class="btn-small" onclick="appState.activeComment=null;renderLog()">Avbryt</button>
+            <button class="btn-small primary" onclick="saveComment('${key}')">Lagre</button>
+          </div>
+        </div>` : ''}
+        ${isNoteOpen ? `<div class="step-comment-box">
+          <div style="font-size:11px;font-weight:600;color:var(--amber);margin-bottom:6px">Fritekst-notat</div>
+          <textarea rows="3" placeholder="Avvik, observasjon, hendelse..." oninput="appState.freeNoteDraft=this.value" style="border-color:rgba(245,158,11,.3)">${appState.freeNoteDraft}</textarea>
+          <div class="comment-actions">
+            <button class="btn-small" onclick="appState.activeComment=null;appState.freeNoteDraft='';renderLog()">Avbryt</button>
+            <button class="btn-small primary" style="background:var(--amber);border-color:var(--amber)" onclick="addFreeNote()">Logg notat</button>
+          </div>
+        </div>` : ''}
+        ${appState.freeNotes.filter(n => n.stepKey === noteKey).map(n => `
+          <div style="display:flex;align-items:flex-start;gap:8px;margin-top:6px;padding:6px 10px;background:rgba(245,158,11,.07);border-radius:8px;border-left:2px solid rgba(245,158,11,.4)">
+            <div style="flex:1;font-size:11px;color:var(--text2);font-style:italic">${n.text}</div>
+            <span style="font-size:11px;color:var(--amber);white-space:nowrap;font-weight:600">${formatTime(n.time)}</span>
+            <button onclick="deleteFreeNote('${n.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);padding:0;line-height:1">
+              <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>`).join('')}
+        ${appState.images.filter(i => i.ownerKey === key).length ? renderImageStrip(key) : ''}
+      </div>`;
+    });
+  });
+
+  // Free notes logged stand-alone (not attached to a step) shown at bottom
+  const standAloneNotes = appState.freeNotes.filter(n => !n.stepKey);
+  if (standAloneNotes.length) {
+    html += `<div class="phase-header">Fritekst notater</div>`;
+    standAloneNotes.forEach(n => {
+      html += `<div class="step-row done" style="border-left:3px solid var(--amber)">
+        <div class="step-header">
+          <div class="step-num" style="background:var(--amber-bg);border-color:rgba(245,158,11,.35);color:var(--amber)">
+            <svg style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+          <div class="step-name" style="font-style:italic;color:var(--text2)">${n.text}</div>
+          <div class="step-meta">
+            <span class="step-time" style="color:var(--amber)">${formatTime(n.time)}</span>
+            <button class="comment-btn${appState.images.filter(i=>i.ownerKey===n.id).length ? ' has-comment' : ''}" onclick="openImagePicker('${n.id}')" title="Legg til bilde" style="${appState.images.filter(i=>i.ownerKey===n.id).length ? 'border-color:rgba(46,125,247,.4);color:var(--accent)' : ''}">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </button>
+            <button class="comment-btn" onclick="deleteFreeNote('${n.id}')" title="Slett">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--text3);fill:none;stroke-width:2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+            </button>
+          </div>
+        </div>
+        ${appState.images.filter(i => i.ownerKey === n.id).length ? renderImageStrip(n.id) : ''}
+      </div>`;
+    });
+  }
+
+  document.getElementById('log-content').innerHTML = html;
+}
+
+function renderOverview() {
+  if (!appState.started || !appState.logs.length) {
+    document.getElementById('overview-content').innerHTML = `
+      <div class="start-screen">
+        <div class="icon">📋</div>
+        <h2>Ingen hendelser logget</h2>
+        <p>Gå til Logg og registrer steg.</p>
+      </div>`;
+    return;
+  }
+  const plan = appState.taskPlan;
+  const taskLogs = [...appState.logs].map(l => ({...l, isFree: false}));
+  const freeEntries = appState.freeNotes.map(n => ({...n, isFree: true}));
+  const sorted = [...taskLogs, ...freeEntries].sort((a, b) => a.time - b.time);
+  const d = appState.opData;
+  const totalSteps = plan.phases.reduce((a, p) => a + p.steps.length, 0);
+
+  let html = `<div class="op-summary">
+    <div class="title">${plan.name}</div>
+    <div class="sub">${d.project} · ${d.vessel} · ${d.type}</div>
+    <div class="tags">
+      <span class="tag">Dato: ${d.date}</span>
+      <span class="tag accent">${appState.logs.length} / ${totalSteps} steg logget${appState.freeNotes.length ? ` · ${appState.freeNotes.length} notat` : ''}</span>
+    </div>
+  </div>`;
+
+  html += `<div class="phase-header">Kronologisk hendelseslogg</div>`;
+  sorted.forEach((log, i) => {
+    const prev = i > 0 ? sorted[i - 1].time : appState.startTime;
+    const delta = formatElapsed(log.time - prev);
+    if (log.isFree) {
+      const imgs = appState.images.filter(i => i.ownerKey === log.id);
+      html += `<div class="log-entry" style="border-left-color:var(--amber)">
+        <div class="le-header">
+          <span class="le-step" style="color:var(--amber)">📝 Notat</span>
+          <span class="le-time" style="color:var(--amber)">${formatTime(log.time)}</span>
+        </div>
+        <div class="le-delta">+${delta} siden ${i === 0 ? 'start' : 'forrige hendelse'}</div>
+        <div class="le-comment" style="font-style:normal;color:var(--text)">${log.text}</div>
+        ${imgs.length ? `<div class="img-strip" style="margin-top:8px">${imgs.map(img=>`<img class="img-thumb" src="${img.dataUrl}" onclick="openLightbox('${img.dataUrl}')" title="${img.filename}">`).join('')}</div>` : ''}
+      </div>`;
+    } else {
+      const imgs = appState.images.filter(i => i.ownerKey === log.key);
+      const phase = plan.phases[log.phaseIdx];
+      const stepName = phase.steps[log.stepIdx];
+      html += `<div class="log-entry">
+        <div class="le-header">
+          <span class="le-step">${phase.name.split(' ')[0]} S${log.stepIdx + 1}: ${stepName}</span>
+          <span class="le-time">${formatTime(log.time)}</span>
+        </div>
+        <div class="le-delta">+${delta} siden ${i === 0 ? 'start' : 'forrige hendelse'}</div>
+        ${log.comment ? `<div class="le-comment">"${log.comment}"</div>` : ''}
+        ${imgs.length ? `<div class="img-strip" style="margin-top:8px">${imgs.map(img=>`<img class="img-thumb" src="${img.dataUrl}" onclick="openLightbox('${img.dataUrl}')" title="${img.filename}">`).join('')}</div>` : ''}
+      </div>`;
+    }
+  });
+
+  document.getElementById('overview-content').innerHTML = html;
+}
+
+function getExportRows() {
+  const plan = appState.taskPlan;
+  const d = appState.opData;
+  const taskEntries = appState.logs.map(l => ({...l, isFree: false}));
+  const freeEntries = appState.freeNotes.map(n => ({...n, isFree: true}));
+  const sorted = [...taskEntries, ...freeEntries].sort((a, b) => a.time - b.time);
+  const rows = [
+    ['Operasjon', 'Ref', 'Dato', 'Vessel', 'Project', 'Operasjonstype',
+     'Sup. dag', 'Sup. natt', 'Op. dag 1', 'Op. dag 2', 'Op. natt 1', 'Op. natt 2',
+     'Fase', 'Steg / Type', 'Klokkeslett', 'Elapsed siden start', 'Elapsed siden forrige', 'Kommentar', 'Bilder']
+  ];
+  sorted.forEach((log, i) => {
+    const prev = i > 0 ? sorted[i - 1].time : appState.startTime;
+    const fase = log.isFree ? 'Fritekst-notat' : plan.phases[log.phaseIdx].name;
+    const steg = log.isFree ? log.text : plan.phases[log.phaseIdx].steps[log.stepIdx];
+    const kommentar = log.isFree ? '' : (log.comment || '');
+    const ownerKey = log.isFree ? log.id : log.key;
+    const imgs = appState.images.filter(i => i.ownerKey === ownerKey);
+    const imgNames = imgs.map(i => i.filename).join('; ');
+    rows.push([
+      plan.name, d.ref, d.date, d.vessel, d.project, d.type,
+      d.supDay, d.supNight, d.opDay1, d.opDay2, d.opNight1, d.opNight2,
+      fase, steg,
+      formatTime(log.time),
+      formatElapsed(log.time - appState.startTime),
+      formatElapsed(log.time - prev),
+      kommentar,
+      imgNames
+    ]);
+  });
+  return { rows, sorted };
+}
+
+async function exportZip() {
+  if (!appState.logs.length && !appState.freeNotes.length) { showToast('Ingen hendelser å eksportere', true); return; }
+  showToast('Pakker zip...');
+
+  const { rows, sorted } = getExportRows();
+  const plan = appState.taskPlan;
+  const d = appState.opData;
+  const ref = d.ref || 'WCU-OpLog';
+  const date = d.date || formatDate(new Date());
+
+  // Build Excel with hyperlinks in Bilder column
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [30,18,12,20,28,18,16,16,16,16,16,16,22,40,12,16,16,36,40].map(w => ({wch: w}));
+
+  // Add hyperlinks to image filenames in the Bilder column (col index 18, 0-based)
+  sorted.forEach((log, rowIdx) => {
+    const ownerKey = log.isFree ? log.id : log.key;
+    const imgs = appState.images.filter(i => i.ownerKey === ownerKey);
+    if (!imgs.length) return;
+    const cellRef = XLSX.utils.encode_cell({r: rowIdx + 1, c: 18});
+    if (!ws[cellRef]) return;
+    // Link to first image; if multiple, list all names but link to folder
+    ws[cellRef].l = { Target: `images/${imgs[0].filename}`, Tooltip: imgs.map(i=>i.filename).join(', ') };
+    ws[cellRef].s = { font: { color: { rgb: '2e7df7' }, underline: true } };
+  });
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Operasjonslogg');
+  const xlsxBuf = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+
+  // Build zip
+  const zip = new JSZip();
+  zip.file(`${ref}-${date}.xlsx`, xlsxBuf);
+
+  if (appState.images.length) {
+    const imgFolder = zip.folder('images');
+    appState.images.forEach(img => {
+      const base64 = img.dataUrl.split(',')[1];
+      imgFolder.file(img.filename, base64, {base64: true});
+    });
+  }
+
+  const zipBlob = await zip.generateAsync({type:'blob', compression:'DEFLATE'});
+  const url = URL.createObjectURL(zipBlob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${ref}-${date}.zip`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast(`Zip lastet ned (${appState.images.length} bilde${appState.images.length !== 1 ? 'r' : ''}) ✓`);
+}
+
+function exportXLSX() {
+  if (!appState.logs.length && !appState.freeNotes.length) { showToast('Ingen hendelser å eksportere', true); return; }
+  const { rows } = getExportRows();
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [30,18,12,20,28,18,16,16,16,16,16,16,22,40,12,16,16,36,40].map(w => ({wch: w}));
+  XLSX.utils.book_append_sheet(wb, ws, 'Operasjonslogg');
+  const ref = appState.opData.ref || 'WCU-OpLog';
+  const date = appState.opData.date || formatDate(new Date());
+  XLSX.writeFile(wb, `${ref}-${date}.xlsx`);
+  showToast('Excel lastet ned ✓');
+}
+
+function exportCSV() {
+  if (!appState.logs.length && !appState.freeNotes.length) { showToast('Ingen hendelser å eksportere', true); return; }
+  const { rows } = getExportRows();
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff' + csv], {type: 'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${appState.opData.ref || 'WCU-OpLog'}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('CSV lastet ned ✓');
+}
+
+async function shareLog() {
+  if (!appState.logs.length && !appState.freeNotes.length) {
+    showToast('Ingen hendelser å dele', true); return;
+  }
+
+  const ref = appState.opData.ref || 'WCU-OpLog';
+  const date = appState.opData.date || formatDate(new Date());
+  const fname = `${ref}-${date}`;
+
+  // Check Web Share API with file support
+  const canShareFiles = navigator.canShare && navigator.share;
+
+  if (!canShareFiles) {
+    document.getElementById('share-unavailable').style.display = 'block';
+    return;
+  }
+
+  showToast('Pakker fil...');
+
+  try {
+    let file;
+
+    if (appState.images.length > 0) {
+      // Build zip with images
+      const { rows } = getExportRows();
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [30,18,12,20,28,18,16,16,16,16,16,16,22,40,12,16,16,36,40].map(w => ({wch: w}));
+      const sorted = [...appState.logs.map(l=>({...l,isFree:false})), ...appState.freeNotes.map(n=>({...n,isFree:true}))].sort((a,b)=>a.time-b.time);
+      sorted.forEach((log, rowIdx) => {
+        const ownerKey = log.isFree ? log.id : log.key;
+        const imgs = appState.images.filter(i => i.ownerKey === ownerKey);
+        if (!imgs.length) return;
+        const cellRef = XLSX.utils.encode_cell({r: rowIdx + 1, c: 18});
+        if (ws[cellRef]) ws[cellRef].l = { Target: `images/${imgs[0].filename}` };
+      });
+      XLSX.utils.book_append_sheet(wb, ws, 'Operasjonslogg');
+      const xlsxBuf = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+      const zip = new JSZip();
+      zip.file(`${fname}.xlsx`, xlsxBuf);
+      const imgFolder = zip.folder('images');
+      appState.images.forEach(img => {
+        imgFolder.file(img.filename, img.dataUrl.split(',')[1], {base64: true});
+      });
+      const zipBlob = await zip.generateAsync({type:'blob', compression:'DEFLATE'});
+      file = new File([zipBlob], `${fname}.zip`, {type: 'application/zip'});
+    } else {
+      // No images — share xlsx directly (smaller, opens in Excel/Teams)
+      const { rows } = getExportRows();
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [30,18,12,20,28,18,16,16,16,16,16,16,22,40,12,16,16,36,40].map(w => ({wch: w}));
+      XLSX.utils.book_append_sheet(wb, ws, 'Operasjonslogg');
+      const xlsxBuf = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+      const blob = new Blob([xlsxBuf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      file = new File([blob], `${fname}.xlsx`, {type: blob.type});
+    }
+
+    const shareData = {
+      title: `WCU OpLog — ${appState.opData.project || ref}`,
+      text: `Operasjonslogg: ${appState.opData.type || ''} · ${appState.opData.vessel || ''} · ${date}\n${appState.logs.length} steg logget, ${appState.freeNotes.length} notater, ${appState.images.length} bilder.`,
+      files: [file]
+    };
+
+    if (navigator.canShare(shareData)) {
+      await navigator.share(shareData);
+      showToast('Delt ✓');
+    } else {
+      // File sharing not supported, try without file
+      const shareNoFile = { title: shareData.title, text: shareData.text };
+      await navigator.share(shareNoFile);
+      showToast('Tekst delt — last ned filen separat');
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      showToast('Deling feilet — bruk nedlasting', true);
+    }
+  }
+}
+
+function resetOperation() {
+  if (!confirm('Nullstill og starte ny operasjon? Eksportér loggen først!')) return;
+  appState = { started: false, startTime: null, opData: {}, logs: [], freeNotes: [], images: [], activeComment: null, commentDraft: '', taskPlan: null, freeNoteOpen: false, freeNoteDraft: '', pendingImageKey: null };
+  document.getElementById('live-badge').style.display = 'none';
+  document.getElementById('start-btn-area').innerHTML = `
+    <button class="btn btn-primary" onclick="startOperation()">
+      <svg style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+      Start operasjon
+    </button>`;
+  switchTab('setup');
+}
+
+function showToast(msg, err) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = err ? 'var(--red)' : 'var(--green)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Set today's date default
+document.getElementById('op-date').value = new Date().toISOString().split('T')[0];
+document.getElementById('op-project').value = 'Skandi Installer — Coflexip';
+document.getElementById('op-vessel').value = 'Skandi Installer';
+document.getElementById('op-type').value = 'Coflexip Deployment';
+
+// Show share availability hint
+if (!navigator.share) {
+  const btn = document.getElementById('share-btn');
+  if (btn) {
+    btn.style.opacity = '0.45';
+    btn.title = 'Krever Safari (iOS) eller Chrome (Android)';
+  }
+}
+
+// Refresh elapsed every 30s when on log tab
+setInterval(() => {
+  if (appState.started && document.getElementById('pane-log').classList.contains('active')) {
+    const el = document.getElementById('elapsed-live');
+    if (el) el.textContent = formatElapsed(new Date() - appState.startTime);
+  }
+}, 30000);
+
+// PWA service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
+
+
+</body>
+</html>
