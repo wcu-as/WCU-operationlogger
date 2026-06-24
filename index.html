@@ -259,7 +259,90 @@ textarea { resize: none; }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* Lock screen */
+/* Focus mode */
+.view-toggle {
+  display: flex; gap: 4px; background: var(--surface2);
+  border-radius: var(--radius); padding: 3px; margin-bottom: 12px;
+}
+.view-btn {
+  flex: 1; padding: 7px; text-align: center; font-size: 11px; font-weight: 600;
+  border-radius: calc(var(--radius) - 2px); cursor: pointer; color: var(--text3);
+  border: none; background: transparent; display: flex; align-items: center;
+  justify-content: center; gap: 5px; transition: background .15s, color .15s;
+}
+.view-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+.view-btn.active { background: var(--surface); color: var(--text); border: 0.5px solid var(--border2); }
+
+.focus-wrap {
+  display: flex; flex-direction: column;
+  height: calc(100dvh - 210px);
+  min-height: 420px;
+  user-select: none;
+}
+.focus-adjacent {
+  padding: 10px 16px; cursor: pointer; transition: opacity .2s, background .2s;
+  flex-shrink: 0; margin: 0 4px;
+}
+.focus-adjacent:active { background: var(--surface2); border-radius: var(--radius); }
+.focus-adjacent.prev { opacity: 0.38; }
+.focus-adjacent.next { opacity: 0.65; }
+.focus-adjacent .fa-num { font-size: 10px; font-weight: 600; color: var(--text3); margin-bottom: 3px; }
+.focus-adjacent .fa-name { font-size: 13px; color: var(--text2); line-height: 1.3; }
+.focus-adjacent.next .fa-name { font-size: 13px; color: var(--text); }
+.focus-adjacent .fa-time { font-size: 11px; color: var(--green); font-weight: 600; }
+.focus-adjacent.done .fa-num::after { content: ' ✓'; color: var(--green); }
+.focus-divider { height: 1px; background: var(--border); flex-shrink: 0; margin: 0 16px; }
+
+.focus-main {
+  flex: 1; display: flex; flex-direction: column; padding: 14px 16px;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  min-height: 0;
+}
+.focus-phase { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin-bottom: 8px; }
+.focus-num { font-size: 13px; font-weight: 600; color: var(--text3); margin-bottom: 6px; }
+.focus-name {
+  font-size: 20px; font-weight: 700; color: var(--text); line-height: 1.35; margin-bottom: 14px;
+}
+.focus-illustration {
+  width: 100%; border-radius: var(--radius); margin-bottom: 14px;
+  border: 1px solid var(--border2); max-height: 220px; object-fit: contain;
+  background: var(--surface2); cursor: pointer;
+}
+.focus-actions {
+  display: flex; gap: 8px; margin-bottom: 12px; flex-shrink: 0;
+}
+.focus-log-btn {
+  flex: 1; padding: 13px; border-radius: var(--radius); font-size: 14px; font-weight: 700;
+  cursor: pointer; border: none; background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.focus-log-btn.done { background: var(--green-bg); color: var(--green); border: 1px solid rgba(15,186,116,.3); }
+.focus-log-btn:active { transform: scale(0.97); }
+.focus-icon-btn {
+  width: 50px; height: 50px; border-radius: var(--radius); cursor: pointer;
+  border: 1px solid var(--border2); background: var(--surface2);
+  display: flex; align-items: center; justify-content: center; color: var(--text2);
+  flex-shrink: 0;
+}
+.focus-icon-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.focus-icon-btn.active { border-color: rgba(46,125,247,.4); color: var(--accent); }
+.focus-icon-btn.amber { border-color: rgba(245,158,11,.4); color: var(--amber); }
+.focus-logged-time {
+  text-align: center; font-size: 12px; color: var(--green); font-weight: 600; margin-bottom: 8px;
+}
+.focus-notes-area { margin-top: 4px; }
+.focus-progress {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-shrink: 0;
+}
+.focus-progress-bar {
+  flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
+}
+.focus-progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .4s; }
+.focus-progress-txt { font-size: 11px; color: var(--text3); white-space: nowrap; }
+.focus-nav-hint {
+  text-align: center; font-size: 11px; color: var(--text3); margin-top: 8px; padding-bottom: 4px;
+}
+</style>
 .lockscreen {
   position: fixed; inset: 0; background: var(--bg); z-index: 2000;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -692,7 +775,9 @@ let appState = {
   taskPlan: null,
   freeNoteOpen: false,
   freeNoteDraft: '',
-  pendingImageKey: null
+  pendingImageKey: null,
+  logView: 'focus',   // 'focus' or 'list'
+  focusIdx: 0         // flat step index in focus mode
 };
 
 // ── AUTO-SAVE ─────────────────────────────────────────────
@@ -726,6 +811,14 @@ function restoreState() {
     appState.freeNotes = (s.freeNotes || []).map(n => ({...n, time: new Date(n.time)}));
     appState.images = (s.images || []).map(i => ({...i, time: new Date(i.time)}));
     appState.taskPlan = s.taskPlan || null;
+    appState.logView = 'focus';
+    // Advance focusIdx to first unlogged step
+    const steps = [];
+    if (appState.taskPlan) {
+      appState.taskPlan.phases.forEach((ph, pi) => ph.steps.forEach((_, si) => steps.push(`${pi}-${si}`)));
+    }
+    const firstUnlogged = steps.findIndex(k => !appState.logs.find(l => l.key === k));
+    appState.focusIdx = Math.max(0, firstUnlogged);
     return true;
   } catch(e) { return false; }
 }
@@ -812,7 +905,7 @@ function xlsxToTaskPlan(wb, filename) {
       currentPhase = { name: 'Steg', steps: [] };
       phases.push(currentPhase);
     }
-    currentPhase.steps.push(step);
+    currentPhase.steps.push({ desc: step, notes: '', illustration: null });
   });
 
   if (!phases.length) throw new Error('Ingen steg funnet');
@@ -858,6 +951,8 @@ function startOperation() {
   appState.started = true;
   const ref = d.ref || 'SOP_005-101';
   appState.taskPlan = TASK_PLANS[ref] || TASK_PLANS['SOP_005-101'];
+  appState.focusIdx = 0;
+  appState.logView = 'focus';
   document.getElementById('live-badge').style.display = 'flex';
   document.getElementById('start-btn-area').innerHTML = `
     <button class="btn btn-outline" onclick="switchTab('log')" style="color:var(--green);border-color:rgba(15,186,116,.3)">
@@ -989,6 +1084,226 @@ function renderImageStrip(ownerKey) {
   </div>`;
 }
 
+// ── FOCUS MODE ────────────────────────────────────────────
+function getFlatSteps() {
+  const plan = appState.taskPlan;
+  if (!plan) return [];
+  const steps = [];
+  plan.phases.forEach((phase, pi) => {
+    phase.steps.forEach((step, si) => {
+      // Support both string steps (built-in TASK_PLANS) and object steps (from Task Plan Editor JSON)
+      const isObj = typeof step === 'object' && step !== null;
+      steps.push({
+        phase: phase.name,
+        step: isObj ? step.desc : step,
+        illustration: isObj ? (step.illustration || null) : null,
+        notes: isObj ? (step.notes || '') : '',
+        pi, si,
+        key: `${pi}-${si}`
+      });
+    });
+  });
+  return steps;
+}
+
+function focusNavigate(idx) {
+  const steps = getFlatSteps();
+  appState.focusIdx = Math.max(0, Math.min(steps.length - 1, idx));
+  appState.activeComment = null;
+  appState.commentDraft = '';
+  appState.freeNoteDraft = '';
+  renderLog();
+}
+
+function renderFocus() {
+  const steps = getFlatSteps();
+  if (!steps.length) return '<div class="start-screen"><h2>Ingen task plan</h2></div>';
+  const total = steps.length;
+  const idx = appState.focusIdx;
+  const curr = steps[idx];
+  const prev = idx > 0 ? steps[idx - 1] : null;
+  const next = idx < total - 1 ? steps[idx + 1] : null;
+  const key = curr.key;
+  const noteKey = `note-${curr.pi}-${curr.si}`;
+  const log = appState.logs.find(l => l.key === key);
+  const isDone = !!log;
+  const isCommentOpen = appState.activeComment === key;
+  const isNoteOpen = appState.activeComment === noteKey;
+  const imgs = appState.images.filter(i => i.ownerKey === key);
+  const stepNotes = appState.freeNotes.filter(n => n.stepKey === noteKey);
+  const doneCount = appState.logs.length;
+  const pct = Math.round(doneCount / total * 100);
+
+  // Illustration from task plan JSON
+  const illustration = curr.illustration || null;
+
+  let html = `<div class="focus-wrap" id="focus-wrap">`;
+
+  // Progress bar
+  html += `<div class="focus-progress" style="padding:0 2px">
+    <div class="focus-progress-bar"><div class="focus-progress-fill" style="width:${pct}%"></div></div>
+    <span class="focus-progress-txt">${doneCount}/${total}</span>
+  </div>`;
+
+  // Previous step
+  if (prev) {
+    const prevLog = appState.logs.find(l => l.key === prev.key);
+    html += `<div class="focus-adjacent prev${prevLog?' done':''}" onclick="focusNavigate(${idx-1})">
+      <div class="fa-num">↑ Steg ${idx}</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <div class="fa-name">${prev.step}</div>
+        ${prevLog ? `<div class="fa-time">${formatTime(prevLog.time)}</div>` : ''}
+      </div>
+    </div>
+    <div class="focus-divider"></div>`;
+  } else {
+    html += `<div style="height:8px"></div>`;
+  }
+
+  // Main step
+  html += `<div class="focus-main">
+    <div class="focus-phase">${curr.phase}</div>
+    <div class="focus-num">Steg ${idx + 1} av ${total}</div>
+    <div class="focus-name">${curr.step}</div>`;
+
+  // Task plan illustration — store in temp var to avoid base64 in onclick
+  if (illustration) {
+    window._focusIllustration = illustration;
+    html += `<img class="focus-illustration" src="${illustration}" 
+      onclick="openLightbox(window._focusIllustration)" alt="Illustrasjon"
+      style="cursor:zoom-in">`;
+  } else {
+    window._focusIllustration = null;
+  }
+
+  // Logged time
+  if (isDone) {
+    html += `<div class="focus-logged-time">✓ Logget ${formatTime(log.time)}</div>`;
+  }
+
+  // Action buttons
+  html += `<div class="focus-actions">
+    ${isDone
+      ? `<button class="focus-log-btn done" onclick="focusNavigate(${Math.min(idx+1, total-1)})">
+           <svg style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+           Logget — neste steg
+         </button>`
+      : `<button class="focus-log-btn" onclick="focusLogStep(${curr.pi},${curr.si},${idx})">
+           <svg style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+           Logg tidspunkt
+         </button>`}
+    <button class="focus-icon-btn${isDone && log.comment ? ' active' : ''}" onclick="toggleComment('${key}')" title="Kommentar">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    </button>
+    <button class="focus-icon-btn${isNoteOpen ? ' amber' : ''}" onclick="toggleComment('${noteKey}')" title="Fritekst-notat">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <button class="focus-icon-btn${imgs.length ? ' active' : ''}" onclick="openImagePicker('${key}')" title="Legg til bilde">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    </button>
+  </div>`;
+
+  // Comment box
+  if (isCommentOpen) {
+    html += `<div class="step-comment-box" style="margin-bottom:10px">
+      <textarea rows="3" placeholder="Kommentar for dette steget..." oninput="appState.commentDraft=this.value">${appState.commentDraft}</textarea>
+      <div class="comment-actions">
+        <button class="btn-small" onclick="appState.activeComment=null;renderLog()">Avbryt</button>
+        <button class="btn-small primary" onclick="saveComment('${key}')">Lagre</button>
+      </div>
+    </div>`;
+  }
+  if (isDone && log.comment && !isCommentOpen) {
+    html += `<div class="step-comment-text" style="margin-bottom:10px">"${log.comment}"</div>`;
+  }
+
+  // Free note box
+  if (isNoteOpen) {
+    html += `<div class="step-comment-box" style="margin-bottom:10px">
+      <div style="font-size:11px;font-weight:600;color:var(--amber);margin-bottom:6px">Fritekst-notat</div>
+      <textarea rows="3" placeholder="Avvik, observasjon, hendelse..." oninput="appState.freeNoteDraft=this.value" style="border-color:rgba(245,158,11,.3)">${appState.freeNoteDraft}</textarea>
+      <div class="comment-actions">
+        <button class="btn-small" onclick="appState.activeComment=null;appState.freeNoteDraft='';renderLog()">Avbryt</button>
+        <button class="btn-small primary" style="background:var(--amber);border-color:var(--amber)" onclick="addFreeNote()">Logg notat</button>
+      </div>
+    </div>`;
+  }
+
+  // Existing notes for this step
+  stepNotes.forEach(n => {
+    html += `<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;padding:6px 10px;background:rgba(245,158,11,.07);border-radius:8px;border-left:2px solid rgba(245,158,11,.4)">
+      <div style="flex:1;font-size:11px;color:var(--text2);font-style:italic">${n.text}</div>
+      <span style="font-size:11px;color:var(--amber);white-space:nowrap;font-weight:600">${formatTime(n.time)}</span>
+      <button onclick="deleteFreeNote('${n.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);padding:0">
+        <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`;
+  });
+
+  // Op photos for this step
+  if (imgs.length) {
+    html += `<div class="img-strip">${imgs.map(img => `
+      <div class="img-thumb-wrap">
+        <img class="img-thumb" src="${img.dataUrl}" onclick="openLightbox('${img.dataUrl}')" title="${img.filename}">
+        <button class="img-del-btn" onclick="deleteImage('${img.id}')">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`).join('')}</div>`;
+  }
+
+  html += `</div>`; // end focus-main
+
+  // Next step
+  if (next) {
+    const nextLog = appState.logs.find(l => l.key === next.key);
+    const phaseChanged = next.phase !== curr.phase;
+    html += `<div class="focus-divider"></div>
+    <div class="focus-adjacent next${nextLog?' done':''}" onclick="focusNavigate(${idx+1})">
+      <div class="fa-num">↓ Steg ${idx + 2}${phaseChanged ? ' · ' + next.phase : ''}</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <div class="fa-name">${next.step}</div>
+        ${nextLog ? `<div class="fa-time">${formatTime(nextLog.time)}</div>` : ''}
+      </div>
+    </div>`;
+  } else {
+    html += `<div style="padding:12px 16px;text-align:center;font-size:12px;color:var(--green);font-weight:600">✓ Siste steg i operasjonen</div>`;
+  }
+
+  html += `</div>`; // end focus-wrap
+
+  // Touch swipe handling
+  html += `<script>
+    (function(){
+      const el = document.getElementById('focus-wrap');
+      if (!el) return;
+      let startY = 0, startX = 0;
+      el.addEventListener('touchstart', e => { startY = e.touches[0].clientY; startX = e.touches[0].clientX; }, {passive:true});
+      el.addEventListener('touchend', e => {
+        const dy = startY - e.changedTouches[0].clientY;
+        const dx = Math.abs(startX - e.changedTouches[0].clientX);
+        if (Math.abs(dy) > 50 && dx < 80) {
+          if (dy > 0) focusNavigate(${idx + 1});
+          else focusNavigate(${idx - 1});
+        }
+      }, {passive:true});
+    })();
+  <\/script>`;
+
+  return html;
+}
+
+function focusLogStep(pi, si, idx) {
+  logStep(pi, si);
+  // Auto-advance to next unlogged step
+  const steps = getFlatSteps();
+  let next = idx + 1;
+  while (next < steps.length && appState.logs.find(l => l.key === steps[next].key)) next++;
+  appState.focusIdx = Math.min(next, steps.length - 1);
+  appState.activeComment = `${pi}-${si}`; // open comment on logged step
+  renderLog();
+}
+// ─────────────────────────────────────────────────────────
+
 function renderLog() {
   if (!appState.started) return;
   const plan = appState.taskPlan;
@@ -997,6 +1312,7 @@ function renderLog() {
   const doneSteps = appState.logs.length;
   const noteCount = appState.freeNotes.length;
 
+  // View toggle + header
   let html = `
     <div class="op-summary">
       <div class="title">${plan.name}</div>
@@ -1013,13 +1329,32 @@ function renderLog() {
         <div class="elapsed-val" id="elapsed-live">${elapsed}</div>
       </div>
       <div class="step-count">${doneSteps} / ${totalSteps} steg${noteCount ? ` · ${noteCount} notat` : ''}</div>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn${appState.logView==='focus'?' active':''}" onclick="appState.logView='focus';renderLog()">
+        <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1"/><line x1="3" y1="4" x2="21" y2="4" stroke-opacity=".4"/><line x1="3" y1="20" x2="21" y2="20" stroke-opacity=".4"/></svg>
+        Fokus
+      </button>
+      <button class="view-btn${appState.logView==='list'?' active':''}" onclick="appState.logView='list';renderLog()">
+        <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Liste
+      </button>
     </div>`;
+
+  if (appState.logView === 'focus') {
+    html += renderFocus();
+    document.getElementById('log-content').innerHTML = html;
+    return;
+  }
 
   plan.phases.forEach((phase, pi) => {
     html += `<div class="phase-header">${phase.name}</div>`;
-    phase.steps.forEach((step, si) => {
+    phase.steps.forEach((stepRaw, si) => {
       const key = `${pi}-${si}`;
       const noteKey = `note-${pi}-${si}`;
+      const isObj = typeof stepRaw === 'object' && stepRaw !== null;
+      const stepName = isObj ? stepRaw.desc : stepRaw;
+      const stepIllustration = isObj ? (stepRaw.illustration || null) : null;
       const log = appState.logs.find(l => l.key === key);
       const isCommentOpen = appState.activeComment === key;
       const isNoteOpen = appState.activeComment === noteKey;
@@ -1027,7 +1362,7 @@ function renderLog() {
       html += `<div class="step-row${isDone ? ' done' : ''}${isCommentOpen || isNoteOpen ? ' comment-open' : ''}">
         <div class="step-header">
           <div class="step-num">${si + 1}</div>
-          <div class="step-name">${step}</div>
+          <div class="step-name">${stepName}</div>
           <div class="step-meta">
             ${isDone
               ? `<span class="step-time">${formatTime(log.time)}</span>
@@ -1044,6 +1379,7 @@ function renderLog() {
             </button>
           </div>
         </div>
+        ${stepIllustration ? `<img src="${stepIllustration}" onclick="openLightbox(this.src)" style="width:100%;max-height:160px;object-fit:contain;border-radius:8px;margin-top:8px;cursor:zoom-in;background:var(--surface2);border:1px solid var(--border2)" alt="Illustrasjon">` : ''}
         ${isDone && log.comment && !isCommentOpen ? `<div class="step-comment-text">"${log.comment}"</div>` : ''}
         ${isCommentOpen ? `<div class="step-comment-box">
           <textarea rows="3" placeholder="Kommentar for dette steget..." oninput="appState.commentDraft=this.value">${appState.commentDraft}</textarea>
@@ -1176,7 +1512,8 @@ function getExportRows() {
   sorted.forEach((log, i) => {
     const prev = i > 0 ? sorted[i - 1].time : appState.startTime;
     const fase = log.isFree ? 'Fritekst-notat' : plan.phases[log.phaseIdx].name;
-    const steg = log.isFree ? log.text : plan.phases[log.phaseIdx].steps[log.stepIdx];
+    const stepRaw = log.isFree ? null : plan.phases[log.phaseIdx].steps[log.stepIdx];
+    const steg = log.isFree ? log.text : (typeof stepRaw === 'object' ? stepRaw.desc : stepRaw);
     const kommentar = log.isFree ? '' : (log.comment || '');
     const ownerKey = log.isFree ? log.id : log.key;
     const imgs = appState.images.filter(i => i.ownerKey === ownerKey);
