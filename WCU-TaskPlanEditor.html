@@ -357,6 +357,10 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
       Åpne .json
     </button>
     <input type="file" id="load-json-input" accept=".json" style="display:none" onchange="loadJSON(event)">
+    <button class="tb-btn" onclick="shareOrSaveJSON()" title="Del eller lagre til OneDrive">
+      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Del / OneDrive
+    </button>
     <button class="tb-btn" onclick="togglePreview()">
       <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       Forhåndsvisning
@@ -807,7 +811,77 @@ function renderPreview() {
 
 // ── EXPORT JSON ───────────────────────────────────────────
 function exportJSON() {
-  const out = {
+  const out = buildPlanJSON();
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${(plan.ref || plan.name || 'task-plan').replace(/[^a-z0-9]/gi, '-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('JSON eksportert ✓');
+}
+
+// ── SHARE / ONEDRIVE ──────────────────────────────────────
+async function shareOrSaveJSON() {
+  const out = buildPlanJSON();
+  const fname = `${(plan.ref || plan.name || 'task-plan').replace(/[^a-z0-9]/gi, '-')}.json`;
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const file = new File([blob], fname, { type: 'application/json' });
+
+  // Try Web Share API first (mobile / macOS)
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        title: `WCU Task Plan — ${plan.name || plan.ref}`,
+        text: `Task plan: ${plan.name} · ${plan.ref} · ${plan.rev}`,
+        files: [file]
+      });
+      showToast('Delt ✓');
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+
+  // Fallback: download with instructions
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  // Show OneDrive tip
+  showOneDriveTip(fname);
+}
+
+function showOneDriveTip(fname) {
+  const existing = document.getElementById('onedrive-tip');
+  if (existing) existing.remove();
+  const tip = document.createElement('div');
+  tip.id = 'onedrive-tip';
+  tip.style.cssText = `position:fixed;bottom:60px;left:50%;transform:translateX(-50%);
+    background:var(--surface);border:1px solid var(--border2);border-radius:10px;
+    padding:14px 18px;font-size:12px;color:var(--text2);z-index:998;max-width:340px;
+    box-shadow:0 8px 32px rgba(0,0,0,.4);line-height:1.6;`;
+  tip.innerHTML = `<div style="font-weight:600;color:var(--text);margin-bottom:6px">
+      💡 Lagre til OneDrive
+    </div>
+    <div>Filen <strong style="color:var(--text)">${fname}</strong> er lastet ned.<br>
+    Flytt den til OneDrive-mappen din for backup og deling:<br>
+    <code style="font-size:11px;background:var(--surface2);padding:2px 6px;border-radius:4px;color:#7db3ff">
+      OneDrive / WCU / Task Plans /
+    </code></div>
+    <button onclick="this.parentElement.remove()" style="margin-top:10px;padding:5px 14px;
+      border-radius:6px;border:1px solid var(--border2);background:transparent;
+      color:var(--text2);cursor:pointer;font-size:11px">OK</button>`;
+  document.body.appendChild(tip);
+  setTimeout(() => tip?.remove(), 8000);
+}
+
+function buildPlanJSON() {
+  return {
     name: plan.name,
     ref: plan.ref,
     rev: plan.rev,
@@ -823,14 +897,6 @@ function exportJSON() {
       }))
     }))
   };
-  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${(plan.ref || plan.name || 'task-plan').replace(/[^a-z0-9]/gi, '-')}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('JSON eksportert ✓');
 }
 
 // ── LOAD JSON ─────────────────────────────────────────────
