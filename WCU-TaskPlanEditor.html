@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WCU Task Plan Editor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #21262d;
+  --surface3: #30363d;
+  --border: rgba(48,54,61,1);
+  --border2: rgba(99,110,123,.4);
+  --accent: #2e7df7;
+  --accent2: #388bfd;
+  --green: #3fb950;
+  --green-bg: rgba(63,185,80,.1);
+  --amber: #d29922;
+  --amber-bg: rgba(210,153,34,.1);
+  --red: #f85149;
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --text3: #484f58;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); }
+
+/* Layout */
+.shell { display: flex; flex-direction: column; height: 100vh; }
+.topbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 20px; display: flex; align-items: center; gap: 16px;
+  height: 52px; flex-shrink: 0;
+}
+.topbar-logo { display: flex; align-items: center; gap: 10px; }
+.logo-mark {
+  width: 30px; height: 30px; border-radius: 7px; background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff; letter-spacing: -.5px;
+}
+.topbar-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.topbar-sub { font-size: 11px; color: var(--text2); }
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.tb-btn {
+  padding: 6px 14px; border-radius: var(--radius); font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border2); background: var(--surface2);
+  color: var(--text); display: flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.tb-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+.tb-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tb-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tb-btn.primary:hover { background: var(--accent2); }
+.tb-btn.success { background: var(--green); border-color: var(--green); color: #fff; }
+
+.workspace { display: flex; flex: 1; overflow: hidden; }
+
+/* Sidebar - plan meta */
+.sidebar {
+  width: 280px; flex-shrink: 0; background: var(--surface);
+  border-right: 1px solid var(--border); overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+.sidebar-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.sidebar-section-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--text3); margin-bottom: 10px;
+}
+.field { margin-bottom: 10px; }
+.field label { font-size: 11px; color: var(--text2); display: block; margin-bottom: 4px; }
+.field input, .field textarea, .field select {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 7px 10px; font-size: 12px; color: var(--text);
+  font-family: var(--sans); outline: none;
+}
+.field input:focus, .field textarea:focus { border-color: var(--accent); }
+.field textarea { resize: none; }
+
+/* Phase list */
+.phase-list { padding: 8px; flex: 1; overflow-y: auto; }
+.phase-item {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 6px; overflow: hidden;
+}
+.phase-header {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  cursor: pointer; user-select: none;
+}
+.phase-header:hover { background: var(--surface3); }
+.phase-chevron {
+  width: 14px; height: 14px; stroke: var(--text3); fill: none; stroke-width: 2;
+  transition: transform .2s; flex-shrink: 0;
+}
+.phase-chevron.open { transform: rotate(90deg); }
+.phase-name-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  font-size: 12px; font-weight: 600; color: var(--text); font-family: var(--sans);
+  min-width: 0;
+}
+.phase-actions { display: flex; gap: 4px; }
+.icon-btn {
+  width: 22px; height: 22px; border-radius: 5px; border: none;
+  background: transparent; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; color: var(--text3);
+}
+.icon-btn:hover { background: var(--surface3); color: var(--text2); }
+.icon-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; }
+.icon-btn.danger:hover { color: var(--red); }
+
+.step-list { padding: 4px 6px 6px; }
+.step-item {
+  display: flex; align-items: flex-start; gap: 6px; padding: 5px 4px;
+  border-radius: 5px; cursor: pointer; transition: background .1s;
+}
+.step-item:hover { background: var(--surface3); }
+.step-item.selected { background: rgba(46,125,247,.12); border: 1px solid rgba(46,125,247,.3); }
+.step-num { font-size: 10px; color: var(--text3); width: 18px; flex-shrink: 0; padding-top: 2px; text-align: right; }
+.step-title-short { font-size: 11px; color: var(--text2); line-height: 1.4; flex: 1; }
+.step-has-img { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 4px; }
+
+.add-phase-btn {
+  margin: 8px; padding: 8px; border-radius: var(--radius);
+  border: 1px dashed var(--border2); background: transparent;
+  color: var(--text3); font-size: 11px; cursor: pointer; width: calc(100% - 16px);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.add-phase-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Editor area */
+.editor {
+  flex: 1; overflow-y: auto; padding: 24px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.editor-empty {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 12px; color: var(--text3);
+}
+.editor-empty svg { width: 40px; height: 40px; stroke: currentColor; fill: none; stroke-width: 1; }
+
+.step-editor {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.step-editor-header {
+  background: var(--surface2); padding: 10px 16px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.step-editor-phase { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--accent); }
+.step-editor-num { font-size: 11px; color: var(--text3); }
+.step-editor-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+.step-desc-input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 12px; font-size: 15px; font-weight: 500;
+  color: var(--text); font-family: var(--sans); outline: none; resize: none;
+  line-height: 1.5;
+}
+.step-desc-input:focus { border-color: var(--accent); }
+
+.illustration-area {
+  border: 1.5px dashed var(--border2); border-radius: var(--radius);
+  min-height: 160px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: border-color .2s, background .2s; position: relative;
+  overflow: hidden;
+}
+.illustration-area:hover { border-color: var(--accent); background: rgba(46,125,247,.04); }
+.illustration-area.has-img { border-style: solid; border-color: var(--border); }
+.illustration-area img { width: 100%; max-height: 360px; object-fit: contain; border-radius: var(--radius); }
+.illustration-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--text3); }
+.illustration-placeholder svg { width: 32px; height: 32px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+.illustration-placeholder span { font-size: 12px; }
+.illustration-overlay {
+  position: absolute; top: 8px; right: 8px; display: flex; gap: 6px;
+}
+.illustration-overlay button {
+  padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+  cursor: pointer; border: none;
+}
+.ill-change { background: rgba(0,0,0,.6); color: #fff; }
+.ill-remove { background: rgba(248,81,73,.8); color: #fff; }
+
+.step-notes-input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 12px; font-size: 12px;
+  color: var(--text2); font-family: var(--sans); outline: none; resize: none;
+}
+.step-notes-input:focus { border-color: var(--border2); }
+
+.step-nav-btns { display: flex; gap: 8px; }
+.step-nav-btn {
+  padding: 7px 14px; border-radius: var(--radius); font-size: 12px; font-weight: 500;
+  cursor: pointer; border: 1px solid var(--border2); background: var(--surface2);
+  color: var(--text2); display: flex; align-items: center; gap: 5px;
+}
+.step-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+.step-nav-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+.step-del-btn {
+  margin-left: auto; padding: 7px 14px; border-radius: var(--radius); font-size: 12px;
+  font-weight: 500; cursor: pointer; border: 1px solid rgba(248,81,73,.3);
+  background: transparent; color: var(--red);
+}
+.step-del-btn:hover { background: rgba(248,81,73,.1); }
+
+.add-step-btn {
+  padding: 10px; border-radius: var(--radius); border: 1px dashed var(--border2);
+  background: transparent; color: var(--text3); font-size: 12px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+}
+.add-step-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Preview panel */
+.preview-panel {
+  width: 360px; flex-shrink: 0; border-left: 1px solid var(--border);
+  background: var(--surface); overflow-y: auto; display: none;
+}
+.preview-panel.open { display: flex; flex-direction: column; }
+.preview-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--text3); display: flex; align-items: center; justify-content: space-between;
+}
+.preview-close { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; }
+.preview-body { padding: 16px; flex: 1; }
+.preview-plan-name { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.preview-plan-meta { font-size: 11px; color: var(--text2); margin-bottom: 16px; }
+.preview-phase-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--accent); margin: 16px 0 8px;
+}
+.preview-step {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 12px; margin-bottom: 6px;
+}
+.preview-step-num { font-size: 10px; color: var(--text3); margin-bottom: 3px; }
+.preview-step-name { font-size: 13px; color: var(--text); font-weight: 500; line-height: 1.4; }
+.preview-step-img { width: 100%; border-radius: 5px; margin-top: 8px; object-fit: contain; max-height: 140px; background: var(--surface); }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--green); color: #fff; border-radius: 20px; padding: 8px 18px;
+  font-size: 12px; font-weight: 600; opacity: 0; transition: opacity .3s, transform .3s;
+  pointer-events: none; z-index: 999; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Drag handle */
+.drag-handle { cursor: grab; color: var(--text3); flex-shrink: 0; }
+.drag-handle svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+/* Status bar */
+.statusbar {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 5px 20px; display: flex; align-items: center; gap: 16px;
+  font-size: 11px; color: var(--text3); flex-shrink: 0;
+}
+.statusbar span { display: flex; align-items: center; gap: 5px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="logo-mark">WCU</div>
+    <div>
+      <div class="topbar-title">Task Plan Editor</div>
+      <div class="topbar-sub">Well Cleanup AS</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="tb-btn" onclick="document.getElementById('load-json-input').click()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Åpne .json
+    </button>
+    <input type="file" id="load-json-input" accept=".json" style="display:none" onchange="loadJSON(event)">
+    <button class="tb-btn" onclick="togglePreview()">
+      <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      Forhåndsvisning
+    </button>
+    <button class="tb-btn" onclick="exportJSON()">
+      <svg viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="21" x2="12" y2="3"/></svg>
+      Eksporter JSON
+    </button>
+    <button class="tb-btn success" onclick="exportPDF()">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Eksporter PDF
+    </button>
+  </div>
+</div>
+
+<div class="workspace">
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Planinformasjon</div>
+    <div class="field">
+      <label>Navn på task plan</label>
+      <input type="text" id="plan-name" placeholder="f.eks. Coflexip Deployment" oninput="planChanged()">
+    </div>
+    <div class="field">
+      <label>Referanse (SOP / WO)</label>
+      <input type="text" id="plan-ref" placeholder="f.eks. SOP_005-101" oninput="planChanged()">
+    </div>
+    <div class="field">
+      <label>Revisjon</label>
+      <input type="text" id="plan-rev" placeholder="Rev. 01" oninput="planChanged()">
+    </div>
+    <div class="field">
+      <label>Dato</label>
+      <input type="date" id="plan-date" oninput="planChanged()">
+    </div>
+    <div class="field">
+      <label>Utarbeidet av</label>
+      <input type="text" id="plan-author" placeholder="Navn" oninput="planChanged()">
+    </div>
+    <div class="field">
+      <label>Beskrivelse</label>
+      <textarea id="plan-desc" rows="2" placeholder="Kort beskrivelse av operasjonen..." oninput="planChanged()"></textarea>
+    </div>
+  </div>
+
+  <div class="sidebar-section" style="border-bottom:none;padding-bottom:0">
+    <div class="sidebar-section-title">Faser og steg</div>
+  </div>
+  <div class="phase-list" id="phase-list"></div>
+  <button class="add-phase-btn" onclick="addPhase()">
+    <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Legg til fase
+  </button>
+</div>
+
+<!-- Editor -->
+<div class="editor" id="editor">
+  <div class="editor-empty" id="editor-empty">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <div>Velg et steg i venstre panel for å redigere</div>
+    <div style="font-size:11px">eller legg til en ny fase for å komme i gang</div>
+  </div>
+</div>
+
+<!-- Preview panel -->
+<div class="preview-panel" id="preview-panel">
+  <div class="preview-header">
+    Forhåndsvisning
+    <button class="preview-close" onclick="togglePreview()">✕</button>
+  </div>
+  <div class="preview-body" id="preview-body"></div>
+</div>
+
+</div><!-- end workspace -->
+
+<div class="statusbar">
+  <span id="status-phases">0 faser</span>
+  <span>·</span>
+  <span id="status-steps">0 steg</span>
+  <span>·</span>
+  <span id="status-images">0 bilder</span>
+</div>
+
+</div><!-- end shell -->
+
+<div class="toast" id="toast"></div>
+<input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleIllustration(event)">
+
+<script>
+// ── STATE ─────────────────────────────────────────────────
+let plan = {
+  name: '',
+  ref: '',
+  rev: 'Rev. 01',
+  date: new Date().toISOString().split('T')[0],
+  author: '',
+  description: '',
+  phases: []
+};
+
+let selectedStep = null; // {phaseIdx, stepIdx}
+let previewOpen = false;
+let pendingImgTarget = null;
+
+// ── INIT ──────────────────────────────────────────────────
+document.getElementById('plan-date').value = plan.date;
+
+// Load Coflexip example
+function loadExample() {
+  plan.name = 'Coflexip Deployment — Deck Winch';
+  plan.ref = 'SOP_005-101';
+  plan.rev = 'Rev. 01';
+  plan.author = '';
+  plan.phases = [
+    { name: '5.1 Pre-operasjon', steps: [
+      { desc: 'Snatch blocks installert iht. riggeskisse', notes: '', illustration: null },
+      { desc: 'Chute deployert iht. løfteplan og riggeskisse', notes: '', illustration: null },
+      { desc: 'Chute rigging frakoblet og sikret skipside med karabiner', notes: '', illustration: null },
+      { desc: 'Pre-operasjon sjekk utført på dekksvinsk', notes: '', illustration: null },
+      { desc: 'Maks trykk på HPU justert — bekreft trekkraft med loadcell', notes: '', illustration: null },
+      { desc: 'Betal ut på vinsk til tilstrekkelig lengde for threading gjennom snatch blocks', notes: '', illustration: null },
+      { desc: 'Rope threades fra vinsk gjennom snatch block på chute ankerpunkt — bekreft sete i spor', notes: '', illustration: null },
+      { desc: 'Rope threades gjennom snatch block på IMR-reel toppramme — bekreft sete og lås', notes: '', illustration: null },
+      { desc: 'Kran koblet til IMR-hose rigging', notes: '', illustration: null },
+      { desc: 'Kran løfter og strekker med 100T', notes: '', illustration: null },
+      { desc: 'Sjøfastgjøring på IMR-stab fjernet', notes: '', illustration: null },
+      { desc: 'Kran løfter og svinges over bord', notes: '', illustration: null },
+    ]},
+    { name: '5.2 Buoyancy inn i spooling device', steps: [
+      { desc: 'IMR-reel reeles ut forsiktig', notes: '', illustration: null },
+      { desc: 'Tilstrekkelig slack reelet ut — kran senker IMR-hose mot chute, standby', notes: '', illustration: null },
+      { desc: 'IMR-reel isolert — Emergency Stop aktivert', notes: '', illustration: null },
+      { desc: 'Inngang IMR-reel gjennom adkomstdør', notes: '', illustration: null },
+      { desc: '3T 2m myk stropp plassert rundt buoyancy i choke-konfigurasjon — bekreft stropp sitter stramt', notes: '', illustration: null },
+      { desc: 'Vinsk-hook festet til choke-løkke iht. riggeskisse — bekreft hook-leppe er sikret/låst', notes: '', illustration: null },
+      { desc: 'Ut av IMR-reel gjennom adkomstdøren', notes: '', illustration: null },
+      { desc: 'Bekreft alt personell er utenfor snapback-sone', notes: '', illustration: null },
+      { desc: 'Ta inn slack på vinsk-rope inntil lett spenning — bekreft rope løper greit i snatch block', notes: '', illustration: null },
+      { desc: 'Vinsk assisterer reel-operator med å entre buoyancy i spooling device', notes: '', illustration: null },
+      { desc: 'Når rope-vinkel er i nøytral posisjon — vinsk-operator betaler ut og holder slack', notes: '', illustration: null },
+      { desc: 'Kontrollert STOPP — koble fra vinsk og sikre vinsk-hook', notes: '', illustration: null },
+    ]},
+    { name: '5.3 Hose deployment — Step and Grip', steps: [
+      { desc: 'Deployment stanset — initierer step-and-grip syklus', notes: '', illustration: null },
+      { desc: 'Isoler vinsk og IMR-reel', notes: '', illustration: null },
+      { desc: 'Inngang IMR-reel gjennom adkomstdør', notes: '', illustration: null },
+      { desc: 'Koble fra og fjern vinsk-rope fra IMR-reel snatch block', notes: '', illustration: null },
+      { desc: 'Ut av IMR-reel gjennom adkomstdøren', notes: '', illustration: null },
+      { desc: 'Reposisjoner myk stropp nær IMR-reel spooling device — bekreft choke er sikker', notes: '', illustration: null },
+      { desc: 'Vinsk-hook festet til choke-løkke — bekreft hook-leppe låst', notes: '', illustration: null },
+      { desc: 'Bekreft alt personell utenfor snapback-sone', notes: '', illustration: null },
+      { desc: 'Vinsk-operator engasjerer vinsk sakte — kontrollert, jevn trekkhastighet', notes: '', illustration: null },
+      { desc: 'IMR-reel operator følger opp og unngår for mye slack', notes: '', illustration: null },
+      { desc: 'Deck Sup. monitorerer hose, stropp, snatch block og rope kontinuerlig', notes: '', illustration: null },
+      { desc: 'Fortsetter pulling inntil: (a) maks rope-travel, ELLER (b) stropp innen 0,5 m fra snatch block — STOPP', notes: '', illustration: null },
+      { desc: 'Vinsk-operator stopper — bremse engasjert — rope beholder noe spenning', notes: '', illustration: null },
+      { desc: 'IMR-reel operator STOPP — Emergency Stop aktivert', notes: '', illustration: null },
+      { desc: 'SLACK signal — vinsk-operator betaler ut rope til slack', notes: '', illustration: null },
+      { desc: 'Reposisjoner myk stropp — bekreft choke sikker', notes: '', illustration: null },
+      { desc: 'Soner klare bekreftet — PULL signal gitt', notes: '', illustration: null },
+      { desc: 'Syklus fullført — hose deployer av seg selv ELLER endposisjon nådd', notes: '', illustration: null },
+    ]},
+    { name: '5.4 Rigg ned', steps: [
+      { desc: 'Tilstrekkelig hose-lengde ute — STOPP signal — vinsk stopper og brems satt', notes: '', illustration: null },
+      { desc: 'Slack vinsk-rope', notes: '', illustration: null },
+      { desc: 'Myk stropp frakoblet fra hose', notes: '', illustration: null },
+      { desc: 'De-rigg dekksvinsk-rope — alt riggingsutstyr gjenvunnet', notes: '', illustration: null },
+      { desc: 'Post-operasjon logg-innlegg fullført: tid, avvik og nær-uhell', notes: '', illustration: null },
+      { desc: 'Eventuelle hendelser eller nær-uhell rapportert i WCU QHSE-systemet', notes: '', illustration: null },
+    ]},
+  ];
+  syncFormFromPlan();
+  renderAll();
+  showToast('Coflexip Deployment lastet ✓');
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+function planChanged() {
+  plan.name = document.getElementById('plan-name').value;
+  plan.ref = document.getElementById('plan-ref').value;
+  plan.rev = document.getElementById('plan-rev').value;
+  plan.date = document.getElementById('plan-date').value;
+  plan.author = document.getElementById('plan-author').value;
+  plan.description = document.getElementById('plan-desc').value;
+  updateStatus();
+  if (previewOpen) renderPreview();
+}
+
+function syncFormFromPlan() {
+  document.getElementById('plan-name').value = plan.name;
+  document.getElementById('plan-ref').value = plan.ref;
+  document.getElementById('plan-rev').value = plan.rev;
+  document.getElementById('plan-date').value = plan.date;
+  document.getElementById('plan-author').value = plan.author;
+  document.getElementById('plan-desc').value = plan.description || '';
+}
+
+function updateStatus() {
+  const totalSteps = plan.phases.reduce((a, p) => a + p.steps.length, 0);
+  const totalImgs = plan.phases.reduce((a, p) => a + p.steps.filter(s => s.illustration).length, 0);
+  document.getElementById('status-phases').textContent = `${plan.phases.length} fase${plan.phases.length !== 1 ? 'r' : ''}`;
+  document.getElementById('status-steps').textContent = `${totalSteps} steg`;
+  document.getElementById('status-images').textContent = `${totalImgs} bilder`;
+}
+
+function showToast(msg, err) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = err ? '#f85149' : '#3fb950';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function getFlatIdx(pi, si) {
+  let n = 0;
+  for (let i = 0; i < pi; i++) n += plan.phases[i].steps.length;
+  return n + si + 1;
+}
+
+// ── PHASE MANAGEMENT ─────────────────────────────────────
+function addPhase() {
+  plan.phases.push({ name: `Fase ${plan.phases.length + 1}`, steps: [], open: true });
+  renderPhaseList();
+  updateStatus();
+}
+
+function deletePhase(pi) {
+  if (!confirm(`Slett "${plan.phases[pi].name}" og alle steg?`)) return;
+  plan.phases.splice(pi, 1);
+  selectedStep = null;
+  renderAll();
+}
+
+function addStep(pi) {
+  plan.phases[pi].steps.push({ desc: 'Nytt steg', notes: '', illustration: null });
+  const si = plan.phases[pi].steps.length - 1;
+  renderAll();
+  selectStep(pi, si);
+}
+
+function deleteStep(pi, si) {
+  plan.phases[pi].steps.splice(si, 1);
+  selectedStep = null;
+  renderAll();
+  showEditor(null);
+}
+
+function selectStep(pi, si) {
+  selectedStep = { pi, si };
+  renderPhaseList();
+  showEditor(pi, si);
+}
+
+// ── RENDER PHASE LIST ─────────────────────────────────────
+function renderPhaseList() {
+  const el = document.getElementById('phase-list');
+  let html = '';
+  plan.phases.forEach((phase, pi) => {
+    const isOpen = phase.open !== false;
+    html += `<div class="phase-item">
+      <div class="phase-header" onclick="togglePhase(${pi})">
+        <svg class="phase-chevron${isOpen ? ' open' : ''}" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        <input class="phase-name-input" value="${phase.name}" onclick="event.stopPropagation()"
+          oninput="plan.phases[${pi}].name=this.value;updateStatus();if(previewOpen)renderPreview();" placeholder="Fasenavn">
+        <div class="phase-actions">
+          <button class="icon-btn" onclick="event.stopPropagation();addStep(${pi})" title="Legg til steg">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button class="icon-btn danger" onclick="event.stopPropagation();deletePhase(${pi})" title="Slett fase">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          </button>
+        </div>
+      </div>`;
+    if (isOpen) {
+      html += `<div class="step-list">`;
+      phase.steps.forEach((step, si) => {
+        const flatN = getFlatIdx(pi, si);
+        const isSel = selectedStep && selectedStep.pi === pi && selectedStep.si === si;
+        html += `<div class="step-item${isSel ? ' selected' : ''}" onclick="selectStep(${pi},${si})">
+          <span class="step-num">${flatN}</span>
+          <span class="step-title-short">${step.desc.slice(0, 55)}${step.desc.length > 55 ? '…' : ''}</span>
+          ${step.illustration ? '<span class="step-has-img" title="Har illustrasjon"></span>' : ''}
+        </div>`;
+      });
+      if (!phase.steps.length) {
+        html += `<div style="padding:6px 8px;font-size:11px;color:var(--text3);font-style:italic">Ingen steg — trykk + for å legge til</div>`;
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+  });
+  el.innerHTML = html;
+}
+
+function togglePhase(pi) {
+  plan.phases[pi].open = plan.phases[pi].open === false ? true : false;
+  renderPhaseList();
+}
+
+// ── STEP EDITOR ───────────────────────────────────────────
+function showEditor(pi, si) {
+  const editorEl = document.getElementById('editor');
+  if (pi === null || pi === undefined) {
+    editorEl.innerHTML = `<div class="editor-empty" id="editor-empty">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <div>Velg et steg i venstre panel for å redigere</div>
+    </div>`;
+    return;
+  }
+  const step = plan.phases[pi].steps[si];
+  const phase = plan.phases[pi];
+  const flatN = getFlatIdx(pi, si);
+  const totalSteps = plan.phases.reduce((a, p) => a + p.steps.length, 0);
+  const hasPrev = flatN > 1;
+  const hasNext = flatN < totalSteps;
+
+  editorEl.innerHTML = `
+    <div class="step-editor">
+      <div class="step-editor-header">
+        <div>
+          <div class="step-editor-phase">${phase.name}</div>
+          <div class="step-editor-num">Steg ${flatN} av ${totalSteps}</div>
+        </div>
+      </div>
+      <div class="step-editor-body">
+        <div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:5px">Stegbeskrivelse</label>
+          <textarea class="step-desc-input" rows="3" id="step-desc"
+            oninput="updateStep(${pi},${si},'desc',this.value)">${step.desc}</textarea>
+        </div>
+
+        <div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px">Illustrasjon</label>
+          <div class="illustration-area${step.illustration ? ' has-img' : ''}"
+            id="ill-area" onclick="pickIllustration(${pi},${si})">
+            ${step.illustration
+              ? `<img src="${step.illustration}" alt="Illustrasjon">
+                 <div class="illustration-overlay">
+                   <button class="ill-change" onclick="event.stopPropagation();pickIllustration(${pi},${si})">Bytt</button>
+                   <button class="ill-remove" onclick="event.stopPropagation();removeIllustration(${pi},${si})">Fjern</button>
+                 </div>`
+              : `<div class="illustration-placeholder">
+                   <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                   <span>Trykk for å laste opp illustrasjon</span>
+                   <span style="font-size:11px">Foto, riggeskisse, diagram...</span>
+                 </div>`}
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:5px">Interne notater / referanser (vises ikke i app)</label>
+          <textarea class="step-notes-input" rows="2" placeholder="f.eks. Se riggeskisse RIG-042, maks SWL 3T..."
+            oninput="updateStep(${pi},${si},'notes',this.value)">${step.notes || ''}</textarea>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div class="step-nav-btns">
+            ${hasPrev ? `<button class="step-nav-btn" onclick="navigateStep(${pi},${si},-1)">
+              <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Forrige
+            </button>` : ''}
+            ${hasNext ? `<button class="step-nav-btn" onclick="navigateStep(${pi},${si},1)">
+              Neste<svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>` : ''}
+          </div>
+          <button class="step-del-btn" onclick="deleteStep(${pi},${si})">Slett steg</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="add-step-btn" onclick="addStep(${pi})">
+      <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Legg til nytt steg i "${phase.name}"
+    </button>`;
+
+  if (previewOpen) renderPreview();
+}
+
+function updateStep(pi, si, field, value) {
+  plan.phases[pi].steps[si][field] = value;
+  // Update sidebar label without full re-render
+  renderPhaseList();
+  if (previewOpen) renderPreview();
+}
+
+function navigateStep(pi, si, dir) {
+  const steps = [];
+  plan.phases.forEach((ph, phi) => ph.steps.forEach((_, sti) => steps.push({ pi: phi, si: sti })));
+  const flat = steps.findIndex(s => s.pi === pi && s.si === si);
+  const next = steps[flat + dir];
+  if (next) selectStep(next.pi, next.si);
+}
+
+// ── ILLUSTRATIONS ─────────────────────────────────────────
+function pickIllustration(pi, si) {
+  pendingImgTarget = { pi, si };
+  const inp = document.getElementById('img-input');
+  inp.value = '';
+  inp.click();
+}
+
+function handleIllustration(e) {
+  const file = e.target.files[0];
+  if (!file || !pendingImgTarget) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const { pi, si } = pendingImgTarget;
+    plan.phases[pi].steps[si].illustration = ev.target.result;
+    pendingImgTarget = null;
+    updateStatus();
+    selectStep(pi, si); // refresh editor
+    showToast('Illustrasjon lagt til ✓');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeIllustration(pi, si) {
+  plan.phases[pi].steps[si].illustration = null;
+  updateStatus();
+  selectStep(pi, si);
+}
+
+// ── PREVIEW ───────────────────────────────────────────────
+function togglePreview() {
+  previewOpen = !previewOpen;
+  document.getElementById('preview-panel').classList.toggle('open', previewOpen);
+  if (previewOpen) renderPreview();
+}
+
+function renderPreview() {
+  const el = document.getElementById('preview-body');
+  let html = `<div class="preview-plan-name">${plan.name || 'Uten navn'}</div>
+    <div class="preview-plan-meta">${plan.ref} · ${plan.rev} · ${plan.date}</div>`;
+  let globalN = 1;
+  plan.phases.forEach(phase => {
+    html += `<div class="preview-phase-title">${phase.name}</div>`;
+    phase.steps.forEach(step => {
+      html += `<div class="preview-step">
+        <div class="preview-step-num">Steg ${globalN++}</div>
+        <div class="preview-step-name">${step.desc}</div>
+        ${step.illustration ? `<img class="preview-step-img" src="${step.illustration}" alt="">` : ''}
+      </div>`;
+    });
+  });
+  el.innerHTML = html;
+}
+
+// ── EXPORT JSON ───────────────────────────────────────────
+function exportJSON() {
+  const out = {
+    name: plan.name,
+    ref: plan.ref,
+    rev: plan.rev,
+    date: plan.date,
+    author: plan.author,
+    description: plan.description,
+    phases: plan.phases.map(ph => ({
+      name: ph.name,
+      steps: ph.steps.map(s => ({
+        desc: s.desc,
+        notes: s.notes || '',
+        illustration: s.illustration || null
+      }))
+    }))
+  };
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${(plan.ref || plan.name || 'task-plan').replace(/[^a-z0-9]/gi, '-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('JSON eksportert ✓');
+}
+
+// ── LOAD JSON ─────────────────────────────────────────────
+function loadJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      plan.name = data.name || '';
+      plan.ref = data.ref || '';
+      plan.rev = data.rev || 'Rev. 01';
+      plan.date = data.date || new Date().toISOString().split('T')[0];
+      plan.author = data.author || '';
+      plan.description = data.description || '';
+      plan.phases = (data.phases || []).map(ph => ({
+        name: ph.name,
+        open: true,
+        steps: (ph.steps || []).map(s => ({
+          desc: s.desc || '',
+          notes: s.notes || '',
+          illustration: s.illustration || null
+        }))
+      }));
+      syncFormFromPlan();
+      selectedStep = null;
+      renderAll();
+      showToast('JSON lastet ✓');
+    } catch { showToast('Ugyldig JSON-fil', true); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ── EXPORT PDF ────────────────────────────────────────────
+async function exportPDF() {
+  if (!plan.phases.length) { showToast('Ingen innhold å eksportere', true); return; }
+  showToast('Genererer PDF...');
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, H = 297;
+  const margin = 18;
+  const contentW = W - margin * 2;
+  let y = margin;
+
+  // Colors
+  const navy = [10, 20, 40];
+  const accent = [46, 125, 247];
+  const green = [15, 186, 116];
+  const gray = [120, 130, 145];
+  const lightbg = [240, 244, 252];
+
+  // ── Cover page ──────────────────────────────────────────
+  doc.setFillColor(...navy);
+  doc.rect(0, 0, W, H, 'F');
+
+  // Accent bar
+  doc.setFillColor(...accent);
+  doc.rect(0, 0, 6, H, 'F');
+
+  // WCU logo block
+  doc.setFillColor(...accent);
+  doc.roundedRect(margin, 30, 28, 28, 4, 4, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('WCU', margin + 14, 30 + 17, { align: 'center' });
+
+  // Well Cleanup AS
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...gray);
+  doc.text('Well Cleanup AS', margin + 32, 42);
+
+  // Plan name
+  y = 80;
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.setFont('helvetica', 'bold');
+  const nameLines = doc.splitTextToSize(plan.name || 'Task Plan', contentW);
+  doc.text(nameLines, margin, y);
+  y += nameLines.length * 10 + 6;
+
+  // Description
+  if (plan.description) {
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...gray);
+    const descLines = doc.splitTextToSize(plan.description, contentW);
+    doc.text(descLines, margin, y);
+    y += descLines.length * 6 + 8;
+  }
+
+  // Divider line
+  doc.setDrawColor(...accent);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, margin + 80, y);
+  y += 10;
+
+  // Metadata table
+  const meta = [
+    ['Referanse', plan.ref || '—'],
+    ['Revisjon', plan.rev || '—'],
+    ['Dato', plan.date || '—'],
+    ['Utarbeidet av', plan.author || '—'],
+  ];
+  meta.forEach(([label, value]) => {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...gray);
+    doc.text(label, margin, y);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text(value, margin + 36, y);
+    y += 7;
+  });
+
+  // Step count
+  const totalSteps = plan.phases.reduce((a, p) => a + p.steps.length, 0);
+  y += 6;
+  doc.setFillColor(...accent);
+  doc.roundedRect(margin, y, 50, 16, 3, 3, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${plan.phases.length} faser · ${totalSteps} steg`, margin + 25, y + 10, { align: 'center' });
+
+  // Footer on cover
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...gray);
+  doc.text('Well Cleanup AS — Konfidensielt', W / 2, H - 10, { align: 'center' });
+
+  // ── Content pages ────────────────────────────────────────
+  let globalN = 1;
+  for (const phase of plan.phases) {
+    // New page for each phase
+    doc.addPage();
+    doc.setFillColor(248, 250, 255);
+    doc.rect(0, 0, W, H, 'F');
+    doc.setFillColor(6, 0, 0, 0); // reset
+
+    // Accent bar
+    doc.setFillColor(...accent);
+    doc.rect(0, 0, 4, H, 'F');
+
+    y = margin;
+
+    // Phase header
+    doc.setFillColor(...navy);
+    doc.roundedRect(margin, y, contentW, 14, 3, 3, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(phase.name.toUpperCase(), margin + 6, y + 9.5);
+    y += 20;
+
+    for (const step of phase.steps) {
+      const hasImg = !!step.illustration;
+      const descLines = doc.splitTextToSize(step.desc, hasImg ? contentW - 50 : contentW - 4);
+      const notesLines = step.notes ? doc.splitTextToSize(step.notes, hasImg ? contentW - 50 : contentW - 4) : [];
+      const textHeight = descLines.length * 5.5 + (notesLines.length ? notesLines.length * 4.5 + 4 : 0);
+      const imgH = hasImg ? 36 : 0;
+      const rowH = Math.max(textHeight + 14, imgH + 10);
+
+      // Page break check
+      if (y + rowH > H - margin - 12) {
+        doc.addPage();
+        doc.setFillColor(248, 250, 255);
+        doc.rect(0, 0, W, H, 'F');
+        doc.setFillColor(...accent);
+        doc.rect(0, 0, 4, H, 'F');
+        y = margin;
+        // Phase continuation header
+        doc.setFillColor(220, 228, 245);
+        doc.roundedRect(margin, y, contentW, 10, 2, 2, 'F');
+        doc.setTextColor(...navy);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${phase.name} (forts.)`, margin + 4, y + 7);
+        y += 14;
+      }
+
+      // Step card background
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(margin, y, contentW, rowH, 2, 2, 'F');
+      doc.setDrawColor(210, 220, 240);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(margin, y, contentW, rowH, 2, 2, 'S');
+
+      // Step number badge
+      doc.setFillColor(...navy);
+      doc.roundedRect(margin + 3, y + 4, 12, 8, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${globalN}`, margin + 9, y + 9.5, { align: 'center' });
+
+      // Step description
+      const textX = margin + 18;
+      const textW = hasImg ? contentW - 52 : contentW - 22;
+      doc.setTextColor(...navy);
+      doc.setFontSize(9.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(doc.splitTextToSize(step.desc, textW), textX, y + 9);
+
+      // Notes
+      if (step.notes) {
+        const notY = y + 9 + descLines.length * 5.5 + 2;
+        doc.setTextColor(...gray);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'italic');
+        doc.text(doc.splitTextToSize(step.notes, textW), textX, notY);
+      }
+
+      // Illustration
+      if (hasImg) {
+        try {
+          const imgX = margin + contentW - 45;
+          const imgW = 42;
+          const imgY = y + 4;
+          doc.addImage(step.illustration, 'JPEG', imgX, imgY, imgW, Math.min(rowH - 8, 36));
+        } catch {}
+      }
+
+      y += rowH + 3;
+      globalN++;
+    }
+
+    // Page footer
+    doc.setTextColor(...gray);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${plan.ref} · ${plan.rev} · ${plan.date}`, margin, H - 8);
+    doc.text(`${doc.getCurrentPageInfo().pageNumber}`, W - margin, H - 8, { align: 'right' });
+  }
+
+  const fname = `${(plan.ref || plan.name || 'task-plan').replace(/[^a-z0-9]/gi, '-')}-${plan.rev || 'Rev01'}.pdf`;
+  doc.save(fname);
+  showToast('PDF eksportert ✓');
+}
+
+// ── FULL RENDER ───────────────────────────────────────────
+function renderAll() {
+  renderPhaseList();
+  showEditor(selectedStep?.pi, selectedStep?.si);
+  updateStatus();
+  if (previewOpen) renderPreview();
+}
+
+// ── START: load example ───────────────────────────────────
+loadExample();
+</script>
+</body>
+</html>
