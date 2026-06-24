@@ -625,23 +625,12 @@ textarea { resize: none; }
       Task Plan Editor
     </div>
     <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px">
-      Lag og rediger task plans med illustrasjoner. Krever separat PIN.
+      Lag og rediger task plans med illustrasjoner. Åpnes i ny fane.
     </p>
-    <button class="btn btn-outline" onclick="openEditorWithPin()" style="color:#7db3ff;border-color:rgba(46,125,247,.3)">
-      <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    <button class="btn btn-outline" onclick="window.open('WCU-TaskPlanEditor.html','_blank')" style="color:#7db3ff;border-color:rgba(46,125,247,.3)">
+      <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       Åpne Task Plan Editor
     </button>
-    <div id="editor-pin-area" style="display:none;margin-top:12px">
-      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Skriv inn editor-PIN:</div>
-      <div style="display:flex;gap:8px">
-        <input type="password" id="editor-pin-input" maxlength="4" placeholder="••••"
-          style="width:80px;font-size:18px;letter-spacing:6px;text-align:center;padding:8px"
-          oninput="if(this.value.length===4)checkEditorPin()">
-        <button class="btn-small primary" onclick="checkEditorPin()">OK</button>
-        <button class="btn-small" onclick="document.getElementById('editor-pin-area').style.display='none';document.getElementById('editor-pin-input').value=''">Avbryt</button>
-      </div>
-      <div id="editor-pin-error" style="font-size:12px;color:var(--red);margin-top:6px;min-height:16px"></div>
-    </div>
   </div>
 
   <div class="card">
@@ -665,9 +654,7 @@ textarea { resize: none; }
 <script>
 // ── PIN LOCK ──────────────────────────────────────────────
 const CORRECT_PIN = '2025';          // ← endre app-PIN her
-const EDITOR_PIN = '9876';           // ← endre editor-PIN her
 const SESSION_KEY = 'wcu_unlocked';  // cleared when tab closes
-const EDITOR_SESSION_KEY = 'wcu_editor_unlocked';
 const EDITOR_URL = 'WCU-TaskPlanEditor.html';
 
 let pinEntry = '';
@@ -713,39 +700,6 @@ function checkPin() {
 if (sessionStorage.getItem(SESSION_KEY) === '1') {
   document.getElementById('lockscreen').style.display = 'none';
 }
-
-// ── EDITOR PIN ────────────────────────────────────────────
-function openEditorWithPin() {
-  if (sessionStorage.getItem(EDITOR_SESSION_KEY) === '1') {
-    window.open(EDITOR_URL, '_blank');
-    return;
-  }
-  const area = document.getElementById('editor-pin-area');
-  area.style.display = area.style.display === 'none' ? 'block' : 'none';
-  document.getElementById('editor-pin-input').value = '';
-  document.getElementById('editor-pin-error').textContent = '';
-  if (area.style.display === 'block') {
-    setTimeout(() => document.getElementById('editor-pin-input').focus(), 100);
-  }
-}
-
-function checkEditorPin() {
-  const val = document.getElementById('editor-pin-input').value;
-  if (val === EDITOR_PIN) {
-    sessionStorage.setItem(EDITOR_SESSION_KEY, '1');
-    document.getElementById('editor-pin-area').style.display = 'none';
-    document.getElementById('editor-pin-input').value = '';
-    window.open(EDITOR_URL, '_blank');
-  } else {
-    document.getElementById('editor-pin-error').textContent = 'Feil PIN — prøv igjen';
-    document.getElementById('editor-pin-input').value = '';
-    setTimeout(() => {
-      document.getElementById('editor-pin-error').textContent = '';
-    }, 2000);
-  }
-}
-// ─────────────────────────────────────────────────────────
-// ─────────────────────────────────────────────────────────
 
 const TASK_PLANS = {
   "SOP_005-101": {
