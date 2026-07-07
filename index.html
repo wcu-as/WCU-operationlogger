@@ -47,7 +47,7 @@ function _checkPin() {
   } else {
     _updateDots('error');
     var el = document.getElementById('lock-error');
-    if (el) el.textContent = 'Feil PIN — prøv igjen';
+    if (el) el.textContent = 'Wrong PIN — try again';
     setTimeout(function() {
       _pinEntry = '';
       _updateDots();
@@ -449,7 +449,7 @@ textarea { resize: none; }
   <div class="lock-logo">
     <div class="lock-logo-mark">WCU</div>
     <h1>Operation Log</h1>
-    <p>Well Cleanup AS — intern tilgang</p>
+    <p>Well Cleanup AS — internal access only</p>
   </div>
   <div class="pin-dots" id="pin-dots">
     <div class="pin-dot" id="dot-0"></div>
@@ -472,7 +472,7 @@ textarea { resize: none; }
     <button type="button" class="pin-key" ontouchstart="event.preventDefault();pinKey('0')" onclick="pinKey('0')">0</button>
     <button type="button" class="pin-key del" ontouchstart="event.preventDefault();pinDel()" onclick="pinDel()">⌫</button>
   </div>
-  <div class="lock-hint">Skriv inn PIN-koden</div>
+  <div class="lock-hint">Enter PIN code</div>
 </div>
 
 <div class="app-header">
@@ -522,8 +522,8 @@ textarea { resize: none; }
     <div class="field">
       <label>Velg task plan</label>
       <select id="taskplan-select" onchange="selectFromDropdown(this.value)">
-        <option value="">— Velg task plan —</option>
-        <option value="__builtin_SOP_005-101">SOP_005-101 · Coflexip Deployment (innebygd)</option>
+        <option value="">— Select task plan —</option>
+        <option value="__builtin_SOP_005-101">SOP_005-101 · Coflexip Deployment (built-in)</option>
       </select>
     </div>
 
@@ -531,7 +531,7 @@ textarea { resize: none; }
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
       <button class="btn btn-outline" id="folder-btn" onclick="openTaskPlanFolder()" style="font-size:12px;padding:8px">
         <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-        <span id="folder-btn-label">Velg mappe</span>
+        <span id="folder-btn-label">Select folder</span>
       </button>
       <input type="file" id="multi-json-input" accept=".json" multiple style="display:none" onchange="loadMultipleJSONFiles(event)">
       <button class="btn btn-outline" onclick="prepareOffline()" style="font-size:12px;padding:8px;color:var(--amber);border-color:rgba(245,158,11,.3)">
@@ -544,11 +544,11 @@ textarea { resize: none; }
 
     <!-- Offline prep modal -->
     <div id="offline-prep-modal" style="display:none;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:8px">⚓ Klar for offline</div>
+      <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:8px">⚓ Ready for offline</div>
       <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px">
-        Gjør dette <strong style="color:var(--text)">før du drar</strong> mens du har nett:<br>
-        1. Trykk <strong style="color:var(--text)">Velg mappe</strong> og pek til Teams/OneDrive-mappen med task plans<br>
-        2. Velg ønsket task plan fra nedtrekksmenyen<br>
+        Do this <strong style="color:var(--text)">before you leave</strong> mens du har nett:<br>
+        1. Trykk <strong style="color:var(--text)">Select folder</strong> and point to the Teams/OneDrive folder with task plans<br>
+        2. Select the desired task plan from the dropdown<br>
         3. Trykk <strong style="color:var(--text)">Lagre for offline</strong> nedenfor
       </div>
       <div id="offline-saved-list" style="margin-bottom:10px"></div>
@@ -557,14 +557,14 @@ textarea { resize: none; }
           <svg style="width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
           Lagre valgt plan for offline
         </button>
-        <button class="btn-small" onclick="clearOfflinePlans()" style="color:var(--red);border-color:rgba(248,81,73,.3)">Tøm buffer</button>
-        <button class="btn-small" onclick="document.getElementById('offline-prep-modal').style.display='none'">Lukk</button>
+        <button class="btn-small" onclick="clearOfflinePlans()" style="color:var(--red);border-color:rgba(248,81,73,.3)">Clear buffer</button>
+        <button class="btn-small" onclick="document.getElementById('offline-prep-modal').style.display='none'">Close</button>
       </div>
     </div>
 
     <div style="display:flex;align-items:center;gap:10px;margin:8px 0">
       <div style="flex:1;height:1px;background:var(--border)"></div>
-      <span style="font-size:11px;color:var(--text3)">eller last opp enkeltfil</span>
+      <span style="font-size:11px;color:var(--text3)">or upload single file</span>
       <div style="flex:1;height:1px;background:var(--border)"></div>
     </div>
     <button class="btn btn-outline" onclick="document.getElementById('taskplan-file-input').click()" style="font-size:13px;padding:9px">
@@ -576,34 +576,34 @@ textarea { resize: none; }
   </div>
     <div class="card-title">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      Operasjonsinformasjon
+      Operation Information
     </div>
     <div class="field">
-      <label>Dato</label>
+      <label>Date</label>
       <input type="date" id="op-date">
     </div>
     <div class="field">
-      <label>Project / Felt</label>
+      <label>Project / Field</label>
       <input type="text" id="op-project" placeholder="f.eks. Skandi Installer — Blokk 15">
     </div>
     <div class="field">
-      <label>Fartøy (Vessel)</label>
+      <label>Vessel</label>
       <input type="text" id="op-vessel" placeholder="f.eks. Skandi Installer">
     </div>
     <div class="field">
       <label>Operasjon</label>
       <select id="op-type">
-        <option value="">Velg operasjon...</option>
+        <option value="">Select operation...</option>
         <option>Stim</option>
         <option>Re-stim</option>
         <option>Scale squeeze</option>
         <option>Coflexip Deployment</option>
         <option>Coflexip Recovery</option>
-        <option>Annet</option>
+        <option>Other</option>
       </select>
     </div>
     <div class="field">
-      <label>Referansenummer (SOP / WO)</label>
+      <label>Reference (SOP / WO)</label>
       <input type="text" id="op-ref" value="SOP_005-101" placeholder="f.eks. SOP_005-101">
     </div>
   </div>
@@ -611,40 +611,40 @@ textarea { resize: none; }
   <div class="card">
     <div class="card-title">
       <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-      Personell
+      Personnel
     </div>
     <div class="divider" style="margin-top:0"></div>
-    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Dagvakt</div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Day shift</div>
     <div class="field-row">
       <div class="field" style="margin-bottom:0">
-        <label>Supervisor dag</label>
-        <input type="text" id="sup-day" placeholder="Navn">
+        <label>Supervisor day</label>
+        <input type="text" id="sup-day" placeholder="Name">
       </div>
       <div class="field" style="margin-bottom:0">
-        <label>Supervisor natt</label>
-        <input type="text" id="sup-night" placeholder="Navn">
+        <label>Supervisor night</label>
+        <input type="text" id="sup-night" placeholder="Name">
       </div>
     </div>
-    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:12px 0 8px">Operatører dag</div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:12px 0 8px">Operators day</div>
     <div class="field-row">
       <div class="field" style="margin-bottom:0">
-        <label>Operator dag 1</label>
-        <input type="text" id="op-day1" placeholder="Navn">
+        <label>Operator day 1</label>
+        <input type="text" id="op-day1" placeholder="Name">
       </div>
       <div class="field" style="margin-bottom:0">
-        <label>Operator dag 2</label>
-        <input type="text" id="op-day2" placeholder="Navn">
+        <label>Operator day 2</label>
+        <input type="text" id="op-day2" placeholder="Name">
       </div>
     </div>
-    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:12px 0 8px">Operatører natt</div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:12px 0 8px">Operators night</div>
     <div class="field-row">
       <div class="field" style="margin-bottom:0">
-        <label>Operator natt 1</label>
-        <input type="text" id="op-night1" placeholder="Navn">
+        <label>Operator night 1</label>
+        <input type="text" id="op-night1" placeholder="Name">
       </div>
       <div class="field" style="margin-bottom:0">
-        <label>Operator natt 2</label>
-        <input type="text" id="op-night2" placeholder="Navn">
+        <label>Operator night 2</label>
+        <input type="text" id="op-night2" placeholder="Name">
       </div>
     </div>
   </div>
@@ -663,8 +663,8 @@ textarea { resize: none; }
   <div id="log-content">
     <div class="start-screen">
       <div class="icon">🔧</div>
-      <h2>Klar til start</h2>
-      <p>Fyll inn operasjonsinformasjon og personell i Oppsett, deretter trykk Start operasjon.</p>
+      <h2>Ready to start</h2>
+      <p>Fill in operation information and personnel in Setup, then press Start operation.</p>
     </div>
   </div>
 </div>
@@ -674,8 +674,8 @@ textarea { resize: none; }
   <div id="overview-content">
     <div class="start-screen">
       <div class="icon">📋</div>
-      <h2>Ingen data ennå</h2>
-      <p>Start en operasjon og logg hendelser — de vises her.</p>
+      <h2>No data yet</h2>
+      <p>Start an operation and log events — they will appear here.</p>
     </div>
   </div>
 </div>
@@ -688,7 +688,7 @@ textarea { resize: none; }
       Del og eksporter
     </div>
     <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px">
-      Del åpner Teams, e-post, AirDrop eller andre apper direkte. Zip-pakken inneholder Excel + alle bilder med klikkbare lenker.
+      Share opens Teams, email, AirDrop or other apps directly. The zip contains Excel + all images with clickable links.
     </p>
 
     <button class="btn btn-primary" id="share-btn" onclick="shareLog()">
@@ -696,7 +696,7 @@ textarea { resize: none; }
       Del via Teams / e-post / AirDrop
     </button>
     <div id="share-unavailable" style="display:none;font-size:12px;color:var(--text3);margin-top:6px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);line-height:1.5">
-      Deling ikke støttet i denne nettleseren. Bruk nedlasting nedenfor og del filen manuelt.
+      Sharing not supported in this browser. Use download below and share the file manually.
     </div>
 
     <div style="margin-top:10px"></div>
@@ -722,7 +722,7 @@ textarea { resize: none; }
       Task Plan Editor
     </div>
     <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px">
-      Lag og rediger task plans med illustrasjoner. Åpnes i ny fane.
+      Create and edit task plans with illustrations. Opens in new tab.
     </p>
     <button class="btn btn-outline" onclick="window.open('WCU-TaskPlanEditor.html','_blank')" style="color:#7db3ff;border-color:rgba(46,125,247,.3)">
       <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -731,7 +731,7 @@ textarea { resize: none; }
   </div>
 
   <div class="card">
-    <div class="card-title">Reset operasjon</div>
+    <div class="card-title">Reset operation</div>
     <button class="btn btn-outline" style="color:var(--red);border-color:rgba(239,68,68,.3)" onclick="resetOperation()">
       <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
       Nullstill og start ny operasjon
@@ -760,87 +760,87 @@ const STRINGS = {
     // Tabs
     tab_setup: 'Oppsett', tab_log: 'Logg', tab_overview: 'Oversikt', tab_export: 'Eksport',
     // Setup
-    task_plan: 'Task Plan', select_plan: 'Velg task plan', builtin_coflexip: 'SOP_005-101 · Coflexip Deployment (innebygd)',
-    pick_folder: 'Velg mappe', pick_files: 'Last opp filer', prep_offline: 'Forbered for offline',
+    task_plan: 'Task Plan', select_plan: 'Velg task plan', builtin_coflexip: 'SOP_005-101 · Coflexip Deployment (built-in)',
+    pick_folder: 'Select folder', pick_files: 'Upload files', prep_offline: 'Forbered for offline',
     upload_json: 'Last opp .json eller .xlsx',
-    op_info: 'Operasjonsinformasjon', date: 'Dato', project: 'Project / Felt', vessel: 'Fartøy (Vessel)',
-    operation: 'Operasjon', ref: 'Referansenummer (SOP / WO)',
-    personnel: 'Personell', dayshift: 'Dagvakt', nightshift: 'Nattvakt',
-    sup_day: 'Supervisor dag', sup_night: 'Supervisor natt',
-    op_day: 'Operatører dag', op_night: 'Operatører natt',
-    op_day1: 'Operator dag 1', op_day2: 'Operator dag 2',
-    op_night1: 'Operator natt 1', op_night2: 'Operator natt 2',
+    op_info: 'Operation Information', date: 'Dato', project: 'Project / Field', vessel: 'Vessel',
+    operation: 'Operation', ref: 'Reference (SOP / WO)',
+    personnel: 'Personnel', dayshift: 'Dagvakt', nightshift: 'Nattvakt',
+    sup_day: 'Supervisor day', sup_night: 'Supervisor night',
+    op_day: 'Operators day', op_night: 'Operators night',
+    op_day1: 'Operator day 1', op_day2: 'Operator day 2',
+    op_night1: 'Operator night 1', op_night2: 'Operator night 2',
     name_ph: 'Navn',
     op_type_stim: 'Stim', op_type_restim: 'Re-stim', op_type_scale: 'Scale squeeze',
     op_type_deploy: 'Coflexip Deployment', op_type_recovery: 'Coflexip Recovery', op_type_other: 'Annet',
-    start_op: 'Start operasjon', op_running: 'Operasjon pågår — gå til logg',
+    start_op: 'Start operasjon', op_running: 'Operation in progress — go to log',
     // Log
-    elapsed: 'Tid siden start', steps_of: 'steg', notes_count: 'notat',
-    focus: 'Fokus', list: 'Liste',
-    log_btn: 'Logg tidspunkt', logged_next: 'Logget — neste steg',
+    elapsed: 'Time since start', steps_of: 'steg', notes_count: 'notat',
+    focus: 'Focus', list: 'List',
+    log_btn: 'Log timestamp', logged_next: 'Logged — next step',
     comment_ph: 'Kommentar for dette steget...', note_ph: 'Avvik, observasjon, hendelse...',
     save: 'Lagre', cancel: 'Avbryt', log_note: 'Logg notat',
-    add_free_note: 'Legg til fritekst-notat', free_note_title: 'Fritekst-notat',
-    step_of: 'Steg', of: 'av', phase_label: 'Fase',
-    last_step: '✓ Siste steg i operasjonen',
-    prev_step: '↑ Steg', next_step: '↓ Steg',
-    swipe_hint: 'Sveip opp/ned for å navigere',
-    comment_saved: 'Kommentar lagret ✓', note_logged: 'Notat logget ✓',
-    write_comment: 'Skriv inn en kommentar først',
+    add_free_note: 'Legg til fritekst-notat', free_note_title: 'Free-text note',
+    step_of: 'Steg', of: 'av', phase_label: 'Phase',
+    last_step: '✓ Last step in operation',
+    prev_step: '↑ Step', next_step: '↓ Step',
+    swipe_hint: 'Swipe up/down to navigate',
+    comment_saved: 'Comment saved ✓', note_logged: 'Note logged ✓',
+    write_comment: 'Enter a comment first',
     // Overview
     no_events: 'Ingen hendelser logget', go_to_log: 'Gå til Logg og registrer steg.',
-    chrono_log: 'Kronologisk hendelseslogg',
-    since_start: 'siden start', since_prev: 'siden forrige hendelse',
-    free_note_label: '📝 Notat',
+    chrono_log: 'Chronological event log',
+    since_start: 'since start', since_prev: 'since previous event',
+    free_note_label: '📝 Note',
     // Export
     share_export: 'Del og eksporter',
-    share_desc: 'Del åpner Teams, e-post, AirDrop eller andre apper direkte. Zip-pakken inneholder Excel + alle bilder med klikkbare lenker.',
+    share_desc: 'Share opens Teams, email, AirDrop or other apps directly. The zip contains Excel + all images with clickable links.',
     share_btn: 'Del via Teams / e-post / AirDrop',
-    share_unavail: 'Deling ikke støttet i denne nettleseren. Bruk nedlasting nedenfor og del filen manuelt.',
+    share_unavail: 'Sharing not supported in this browser. Use download below and share the file manually.',
     dl_zip: 'Last ned ZIP (Excel + bilder)', dl_xlsx: 'Kun Excel (.xlsx)', dl_csv: 'Kun CSV',
-    editor_card: 'Task Plan Editor', editor_desc: 'Lag og rediger task plans med illustrasjoner. Åpnes i ny fane.',
+    editor_card: 'Task Plan Editor', editor_desc: 'Create and edit task plans with illustrations. Opens in new tab.',
     open_editor: 'Åpne Task Plan Editor',
     reset_card: 'Reset operasjon', reset_btn: 'Nullstill og start ny operasjon',
     // Offline prep
-    offline_title: '⚓ Klar for offline',
-    offline_desc_pre: 'Gjør dette', offline_desc_bold: 'før du drar', offline_desc_post: 'mens du har nett:',
-    offline_step1: '1. Trykk', offline_step1b: 'og pek til Teams/OneDrive-mappen med task plans',
-    offline_step2: '2. Velg ønsket task plan fra nedtrekksmenyen',
+    offline_title: '⚓ Ready for offline',
+    offline_desc_pre: 'Do this', offline_desc_bold: 'before you leave', offline_desc_post: 'while you have internet:',
+    offline_step1: '1. Trykk', offline_step1b: 'and point to the Teams/OneDrive folder with task plans',
+    offline_step2: '2. Select the desired task plan from the dropdown',
     offline_step3: '3. Trykk', offline_step3b: 'nedenfor',
     save_offline: 'Lagre valgt plan for offline', clear_offline: 'Tøm buffer', close: 'Lukk',
-    no_offline: 'Ingen planer lagret for offline ennå',
-    select_first: 'Velg en task plan først',
-    saved_offline: '✓ lagret for offline',
+    no_offline: 'No plans saved for offline yet',
+    select_first: 'Select a task plan first',
+    saved_offline: '✓ saved for offline',
     // Toasts
-    op_started: 'Operasjon startet ✓', comment_saved_t: 'Kommentar lagret ✓',
-    note_saved_t: 'Notat logget ✓', img_added: 'Bilde lagt til ✓',
-    restored: '⚡ Pågående operasjon gjenopprettet',
+    op_started: 'Operation started ✓', comment_saved_t: 'Comment saved ✓',
+    note_saved_t: 'Note logged ✓', img_added: 'Image added ✓',
+    restored: '⚡ Ongoing operation restored',
     // Status
-    elapsed_label: 'Tid siden start',
+    elapsed_label: 'Time since start',
     operation_ongoing: 'Operasjon pågår',
     // Reset confirm
-    reset_confirm: 'Nullstill og starte ny operasjon? Eksportér loggen først!',
+    reset_confirm: 'Reset and start new operation? Export the log first!',
     // Share
-    sharing_packing: 'Pakker fil...',
-    shared_ok: 'Delt ✓',
-    share_text_only: 'Tekst delt — last ned filen separat',
-    share_failed: 'Deling feilet — bruk nedlasting',
-    packing_zip: 'Pakker zip...',
+    sharing_packing: 'Packing file...',
+    shared_ok: 'Shared ✓',
+    share_text_only: 'Text shared — download file separately',
+    share_failed: 'Sharing failed — use download',
+    packing_zip: 'Packing zip...',
     zip_downloaded: 'Zip lastet ned',
     images: 'bilde', images_pl: 'bilder',
-    xlsx_downloaded: 'Excel lastet ned ✓',
-    csv_downloaded: 'CSV lastet ned ✓',
-    no_events_export: 'Ingen hendelser å eksportere',
-    no_events_share: 'Ingen hendelser å dele',
+    xlsx_downloaded: 'Excel downloaded ✓',
+    csv_downloaded: 'CSV downloaded ✓',
+    no_events_export: 'No events to export',
+    no_events_share: 'No events to share',
     // Folder
-    folder_scanning: 'Skanner mappe...',
-    folder_loaded: 'task plan lastet fra mappe',
-    folder_loaded_pl: 'task planer lastet fra mappe',
-    folder_empty: 'ingen JSON-filer funnet',
+    folder_scanning: 'Scanning folder...',
+    folder_loaded: 'task plan loaded from folder',
+    folder_loaded_pl: 'task plans loaded from folder',
+    folder_empty: 'no JSON files found',
     files_loaded: 'task plan lastet',
     files_loaded_pl: 'task planer lastet',
-    files_none: 'Ingen gyldige JSON task plans funnet i valgte filer',
-    offline_restored: 'klar for offline',
+    files_none: 'No valid JSON task plans found',
+    offline_restored: 'ready for offline',
   },
   en: {
     tab_setup: 'Setup', tab_log: 'Log', tab_overview: 'Overview', tab_export: 'Export',
@@ -1146,7 +1146,7 @@ function selectBuiltinPlan(ref) {
 function showTaskPlanLoaded(name) {
   const el = document.getElementById('taskplan-loaded');
   el.style.display = 'block';
-  el.textContent = '✓ Lastet: ' + name;
+  el.textContent = '✓ Loaded: ' + name;
 }
 
 function addToDropdown(key, label) {
@@ -1167,7 +1167,7 @@ function isSafari() {
 // Set correct label on page load
 function initFolderBtn() {
   const label = document.getElementById('folder-btn-label');
-  if (label && isSafari()) label.textContent = 'Last opp filer';
+  if (label && isSafari()) label.textContent = 'Upload files';
 }
 
 async function openTaskPlanFolder() {
@@ -1181,7 +1181,7 @@ async function openTaskPlanFolder() {
     folderHandle = await window.showDirectoryPicker({ mode: 'read' });
     await scanFolder(folderHandle);
   } catch(e) {
-    if (e.name !== 'AbortError') showToast('Kunne ikke åpne mappen', true);
+    if (e.name !== 'AbortError') showToast('Could not open folder', true);
   }
 }
 
@@ -1250,7 +1250,7 @@ function prepareOffline() {
 
 function saveCurrentPlanOffline() {
   if (!appState.taskPlan) {
-    showToast('Velg en task plan først', true);
+    showToast('Select a task plan first', true);
     return;
   }
   try {
@@ -1265,7 +1265,7 @@ function saveCurrentPlanOffline() {
     addToDropdown(dropKey, label);
     renderOfflineSavedList();
     showToast(`"${appState.taskPlan.name}" lagret for offline ✓`);
-  } catch(e) { showToast('Kunne ikke lagre — lagringsplass full?', true); }
+  } catch(e) { showToast('Could not save — storage full?', true); }
 }
 
 function renderOfflineSavedList() {
@@ -1300,7 +1300,7 @@ function removeOfflinePlan(key) {
     const opt = sel.querySelector(`option[value="offline_${key}"]`);
     if (opt) opt.remove();
     renderOfflineSavedList();
-    showToast('Plan fjernet fra offline-buffer');
+    showToast('Plan removed from offline buffer');
   } catch {}
 }
 
@@ -1312,7 +1312,7 @@ function clearOfflinePlans() {
   sel.querySelectorAll('option[value^="offline_"]').forEach(o => o.remove());
   Object.keys(taskPlanLibrary).filter(k => k.startsWith('offline_')).forEach(k => delete taskPlanLibrary[k]);
   renderOfflineSavedList();
-  showToast('Offline-buffer tømt');
+  showToast('Offline buffer cleared');
 }
 
 function restoreOfflinePlans() {
@@ -1340,12 +1340,12 @@ function loadTaskPlanFile(e) {
     reader.onload = ev => {
       try {
         const plan = JSON.parse(ev.target.result);
-        if (!plan.name || !plan.phases) throw new Error('Ugyldig format');
+        if (!plan.name || !plan.phases) throw new Error('Invalid format');
         appState.taskPlan = plan;
         showTaskPlanLoaded(plan.name);
         document.getElementById('op-ref').value = plan.ref || file.name.replace('.json','');
-        showToast('Task plan lastet ✓');
-      } catch(err) { showToast('Ugyldig JSON-fil', true); }
+        showToast('Task plan loaded ✓');
+      } catch(err) { showToast('Invalid JSON file', true); }
     };
     reader.readAsText(file);
   } else if (ext === 'xlsx' || ext === 'xls') {
@@ -1357,7 +1357,7 @@ function loadTaskPlanFile(e) {
         appState.taskPlan = plan;
         showTaskPlanLoaded(plan.name);
         document.getElementById('op-ref').value = plan.ref || file.name.replace(/\.[^.]+$/,'');
-        showToast('Task plan lastet fra Excel ✓');
+        showToast('Task plan loaded from Excel ✓');
       } catch(err) { showToast('Kunne ikke lese Excel-filen: ' + err.message, true); }
     };
     reader.readAsArrayBuffer(file);
@@ -1428,7 +1428,7 @@ function formatElapsed(ms) {
 
 function startOperation() {
   const d = getOpData();
-  if (!d.project) { showToast('Fyll inn prosjektnavn', true); return; }
+  if (!d.project) { showToast('Please enter a project name', true); return; }
   appState.opData = d;
   appState.startTime = new Date();
   appState.started = true;
@@ -1445,7 +1445,7 @@ function startOperation() {
   switchTab('log');
   renderLog();
   saveState();
-  showToast('Operasjon startet ✓');
+  showToast('Operation started ✓');
 }
 
 function switchTab(name) {
@@ -1491,7 +1491,7 @@ function saveComment(key) {
 
 function addFreeNote() {
   const text = appState.freeNoteDraft.trim();
-  if (!text) { showToast('Skriv inn en kommentar først', true); return; }
+  if (!text) { showToast('Enter a comment first', true); return; }
   const stepKey = appState.activeComment || null;
   appState.freeNotes.push({ id: 'fn-' + Date.now(), time: new Date(), text, stepKey });
   appState.activeComment = null;
@@ -1561,7 +1561,7 @@ function renderImageStrip(ownerKey) {
           <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>`).join('')}
-    <div class="img-add-btn" onclick="openImagePicker('${ownerKey}')" title="Legg til bilde">
+    <div class="img-add-btn" onclick="openImagePicker('${ownerKey}')" title="Add image">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
     </div>
   </div>`;
@@ -1632,7 +1632,7 @@ function renderFocus() {
   if (prev) {
     const prevLog = appState.logs.find(l => l.key === prev.key);
     html += `<div class="focus-adjacent prev${prevLog?' done':''}" onclick="focusNavigate(${idx-1})">
-      <div class="fa-num">${t('prev_step')} ${idx}</div>
+      <div class="fa-num">${'↑ Step'} ${idx}</div>
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
         <div class="fa-name">${prev.step}</div>
         ${prevLog ? `<div class="fa-time">${formatTime(prevLog.time)}</div>` : ''}
@@ -1646,7 +1646,7 @@ function renderFocus() {
   // Main step
   html += `<div class="focus-main">
     <div class="focus-phase">${curr.phase}</div>
-    <div class="focus-num">${t('step_of')} ${idx + 1} ${t('of')} ${total}</div>
+    <div class="focus-num">${'Step'} ${idx + 1} ${'of'} ${total}</div>
     <div class="focus-name">${curr.step}</div>`;
 
   // Task plan illustration — store in temp var to avoid base64 in onclick
@@ -1849,15 +1849,15 @@ function renderLog() {
           <div class="step-meta">
             ${isDone
               ? `<span class="step-time">${formatTime(log.time)}</span>
-                 <button class="comment-btn${log.comment ? ' has-comment' : ''}" onclick="toggleComment('${key}')" title="Kommentar til steg">
+                 <button class="comment-btn${log.comment ? ' has-comment' : ''}" onclick="toggleComment('${key}')" title="Comment">
                    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                  </button>`
               : `<span class="step-time pending">—</span>
-                 <button class="log-btn" onclick="logStep(${pi}, ${si})">Logg</button>`}
-            <button class="comment-btn${isNoteOpen ? ' has-comment' : ''}" onclick="toggleComment('${noteKey}')" title="Legg til notat" style="${isNoteOpen ? 'border-color:rgba(245,158,11,.5);color:var(--amber)' : ''}">
+                 <button class="log-btn" onclick="logStep(${pi}, ${si})">Log</button>`}
+            <button class="comment-btn${isNoteOpen ? ' has-comment' : ''}" onclick="toggleComment('${noteKey}')" title="Add note" style="${isNoteOpen ? 'border-color:rgba(245,158,11,.5);color:var(--amber)' : ''}">
               <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
-            <button class="comment-btn${appState.images.filter(i=>i.ownerKey===key).length ? ' has-comment' : ''}" onclick="openImagePicker('${key}')" title="Legg til bilde" style="${appState.images.filter(i=>i.ownerKey===key).length ? 'border-color:rgba(46,125,247,.4);color:var(--accent)' : ''}">
+            <button class="comment-btn${appState.images.filter(i=>i.ownerKey===key).length ? ' has-comment' : ''}" onclick="openImagePicker('${key}')" title="Add image" style="${appState.images.filter(i=>i.ownerKey===key).length ? 'border-color:rgba(46,125,247,.4);color:var(--accent)' : ''}">
               <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             </button>
           </div>
@@ -1895,7 +1895,7 @@ function renderLog() {
   // Free notes logged stand-alone (not attached to a step) shown at bottom
   const standAloneNotes = appState.freeNotes.filter(n => !n.stepKey);
   if (standAloneNotes.length) {
-    html += `<div class="phase-header">Fritekst notater</div>`;
+    html += `<div class="phase-header">Free-text notes</div>`;
     standAloneNotes.forEach(n => {
       html += `<div class="step-row done" style="border-left:3px solid var(--amber)">
         <div class="step-header">
@@ -1905,10 +1905,10 @@ function renderLog() {
           <div class="step-name" style="font-style:italic;color:var(--text2)">${n.text}</div>
           <div class="step-meta">
             <span class="step-time" style="color:var(--amber)">${formatTime(n.time)}</span>
-            <button class="comment-btn${appState.images.filter(i=>i.ownerKey===n.id).length ? ' has-comment' : ''}" onclick="openImagePicker('${n.id}')" title="Legg til bilde" style="${appState.images.filter(i=>i.ownerKey===n.id).length ? 'border-color:rgba(46,125,247,.4);color:var(--accent)' : ''}">
+            <button class="comment-btn${appState.images.filter(i=>i.ownerKey===n.id).length ? ' has-comment' : ''}" onclick="openImagePicker('${n.id}')" title="Add image" style="${appState.images.filter(i=>i.ownerKey===n.id).length ? 'border-color:rgba(46,125,247,.4);color:var(--accent)' : ''}">
               <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             </button>
-            <button class="comment-btn" onclick="deleteFreeNote('${n.id}')" title="Slett">
+            <button class="comment-btn" onclick="deleteFreeNote('${n.id}')" title="Delete">
               <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--text3);fill:none;stroke-width:2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
             </button>
           </div>
@@ -1988,9 +1988,9 @@ function getExportRows() {
   const freeEntries = appState.freeNotes.map(n => ({...n, isFree: true}));
   const sorted = [...taskEntries, ...freeEntries].sort((a, b) => a.time - b.time);
   const rows = [
-    ['Operasjon', 'Ref', 'Dato', 'Vessel', 'Project', 'Operasjonstype',
+    ['Operation', 'Ref', 'Dato', 'Vessel', 'Project', 'Operasjonstype',
      'Sup. dag', 'Sup. natt', 'Op. dag 1', 'Op. dag 2', 'Op. natt 1', 'Op. natt 2',
-     'Fase', 'Steg / Type', 'Klokkeslett', 'Elapsed siden start', 'Elapsed siden forrige', 'Kommentar', 'Bilder']
+     'Phase', 'Step / Type', 'Time', 'Elapsed since start', 'Elapsed since previous', 'Comment', 'Images']
   ];
   sorted.forEach((log, i) => {
     const prev = i > 0 ? sorted[i - 1].time : appState.startTime;
@@ -2079,7 +2079,7 @@ function exportXLSX() {
 }
 
 function exportCSV() {
-  if (!appState.logs.length && !appState.freeNotes.length) { showToast('Ingen hendelser å eksportere', true); return; }
+  if (!appState.logs.length && !appState.freeNotes.length) { showToast('No events to export', true); return; }
   const { rows } = getExportRows();
   const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
   const blob = new Blob(['\ufeff' + csv], {type: 'text/csv;charset=utf-8'});
@@ -2216,7 +2216,7 @@ if (offlinePlanCount > 0) {
   const status = document.getElementById('folder-status');
   if (status) {
     status.style.display = 'block';
-    status.textContent = `⚓ ${offlinePlanCount} task plan${offlinePlanCount !== 1 ? 'er' : ''} klar for offline`;
+    status.textContent = `⚓ ${offlinePlanCount} task plan${offlinePlanCount !== 1 ? 'er' : ''} ready for offline`;
   }
 }
 if (restoreState()) {
