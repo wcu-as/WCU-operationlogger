@@ -585,27 +585,30 @@ textarea { resize: none; }
     </div>
     <div class="field">
       <label>Project / Field</label>
-      <input type="text" id="op-project" placeholder="f.eks. Skandi Installer — Blokk 15">
+      <input type="text" id="op-project" placeholder="e.g. Shell AOR Brent 2026">
     </div>
     <div class="field">
       <label>Vessel</label>
-      <input type="text" id="op-vessel" placeholder="f.eks. Skandi Installer">
+      <input type="text" id="op-vessel" placeholder="e.g. Siri Knutsen">
     </div>
     <div class="field">
       <label>Operation type</label>
       <select id="op-type">
         <option value="">Select operation...</option>
-        <option>Stim</option>
-        <option>Re-stim</option>
-        <option>Scale squeeze</option>
-        <option>Coflexip Deployment</option>
-        <option>Coflexip Recovery</option>
+        <option>Hose Deployment</option>
+        <option>Hose Recovery</option>
+        <option>Backflushing</option>
+        <option>Emergency Disconnect and Reconnect</option>
+        <option>Hose Rigging</option>
+        <option>Leak Test</option>
+        <option>Transpooling</option>
+        <option>Hose Laydown</option>
         <option>Other</option>
       </select>
     </div>
     <div class="field">
       <label>Reference (SOP / WO)</label>
-      <input type="text" id="op-ref" value="SOP_005-101" placeholder="f.eks. SOP_005-101">
+      <input type="text" id="op-ref" placeholder="e.g. SK26-TP-1003">
     </div>
   </div>
 
@@ -615,6 +618,10 @@ textarea { resize: none; }
       Personnel
     </div>
     <div class="divider" style="margin-top:0"></div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Project Engineer</label>
+      <input type="text" id="proj-eng" placeholder="Name">
+    </div>
     <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Day shift</div>
     <div class="field-row">
       <div class="field" style="margin-bottom:0">
@@ -1404,6 +1411,7 @@ function getOpData() {
     vessel: document.getElementById('op-vessel').value,
     type: document.getElementById('op-type').value,
     ref: document.getElementById('op-ref').value,
+    projEng: document.getElementById('proj-eng').value,
     supDay: document.getElementById('sup-day').value,
     supNight: document.getElementById('sup-night').value,
     opDay1: document.getElementById('op-day1').value,
@@ -1989,13 +1997,13 @@ function getExportRows() {
   const freeEntries = appState.freeNotes.map(n => ({...n, isFree: true}));
   const sorted = [...taskEntries, ...freeEntries].sort((a, b) => a.time - b.time);
   const rows = [
-    ['Operation', 'Ref', 'Dato', 'Vessel', 'Project', 'Operasjonstype',
-     'Sup. dag', 'Sup. natt', 'Op. dag 1', 'Op. dag 2', 'Op. natt 1', 'Op. natt 2',
+    ['Operation', 'Ref', 'Date', 'Vessel', 'Project', 'Operation type',
+     'Project Engineer', 'Sup. day', 'Sup. night', 'Op. day 1', 'Op. day 2', 'Op. night 1', 'Op. night 2',
      'Phase', 'Step / Type', 'Time', 'Elapsed since start', 'Elapsed since previous', 'Comment', 'Images']
   ];
   sorted.forEach((log, i) => {
     const prev = i > 0 ? sorted[i - 1].time : appState.startTime;
-    const fase = log.isFree ? t('free_note_label') : plan.phases[log.phaseIdx].name;
+    const fase = log.isFree ? '📝 Note' : plan.phases[log.phaseIdx].name;
     const stepRaw = log.isFree ? null : plan.phases[log.phaseIdx].steps[log.stepIdx];
     const steg = log.isFree ? log.text : (typeof stepRaw === 'object' ? stepRaw.desc : stepRaw);
     const kommentar = log.isFree ? '' : (log.comment || '');
@@ -2004,7 +2012,7 @@ function getExportRows() {
     const imgNames = imgs.map(i => i.filename).join('; ');
     rows.push([
       plan.name, d.ref, d.date, d.vessel, d.project, d.type,
-      d.supDay, d.supNight, d.opDay1, d.opDay2, d.opNight1, d.opNight2,
+      d.projEng || '', d.supDay, d.supNight, d.opDay1, d.opDay2, d.opNight1, d.opNight2,
       fase, steg,
       formatTime(log.time),
       formatElapsed(log.time - appState.startTime),
@@ -2029,7 +2037,7 @@ async function exportZip() {
   // Build Excel with hyperlinks in Bilder column
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [30,18,12,20,28,18,16,16,16,16,16,16,22,40,12,16,16,36,40].map(w => ({wch: w}));
+  ws['!cols'] = [30,18,12,20,28,22,20,16,16,16,16,16,16,22,40,12,16,16,36,40].map(w => ({wch: w}));
 
   // Add hyperlinks to image filenames in the Bilder column (col index 18, 0-based)
   sorted.forEach((log, rowIdx) => {
@@ -2071,7 +2079,7 @@ function exportXLSX() {
   const { rows } = getExportRows();
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [30,18,12,20,28,18,16,16,16,16,16,16,22,40,12,16,16,36,40].map(w => ({wch: w}));
+  ws['!cols'] = [30,18,12,20,28,22,20,16,16,16,16,16,16,22,40,12,16,16,36,40].map(w => ({wch: w}));
   XLSX.utils.book_append_sheet(wb, ws, 'Operasjonslogg');
   const ref = appState.opData.ref || 'WCU-OpLog';
   const date = appState.opData.date || formatDate(new Date());
@@ -2118,7 +2126,7 @@ async function shareLog() {
       const { rows } = getExportRows();
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(rows);
-      ws['!cols'] = [30,18,12,20,28,18,16,16,16,16,16,16,22,40,12,16,16,36,40].map(w => ({wch: w}));
+      ws['!cols'] = [30,18,12,20,28,22,20,16,16,16,16,16,16,22,40,12,16,16,36,40].map(w => ({wch: w}));
       const sorted = [...appState.logs.map(l=>({...l,isFree:false})), ...appState.freeNotes.map(n=>({...n,isFree:true}))].sort((a,b)=>a.time-b.time);
       sorted.forEach((log, rowIdx) => {
         const ownerKey = log.isFree ? log.id : log.key;
@@ -2142,7 +2150,7 @@ async function shareLog() {
       const { rows } = getExportRows();
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(rows);
-      ws['!cols'] = [30,18,12,20,28,18,16,16,16,16,16,16,22,40,12,16,16,36,40].map(w => ({wch: w}));
+      ws['!cols'] = [30,18,12,20,28,22,20,16,16,16,16,16,16,22,40,12,16,16,36,40].map(w => ({wch: w}));
       XLSX.utils.book_append_sheet(wb, ws, 'Operasjonslogg');
       const xlsxBuf = XLSX.write(wb, {bookType:'xlsx', type:'array'});
       const blob = new Blob([xlsxBuf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
@@ -2194,9 +2202,9 @@ function showToast(msg, err) {
 
 // Set today's date default
 document.getElementById('op-date').value = new Date().toISOString().split('T')[0];
-document.getElementById('op-project').value = 'Skandi Installer — Coflexip';
-document.getElementById('op-vessel').value = 'Skandi Installer';
-document.getElementById('op-type').value = 'Coflexip Deployment';
+document.getElementById('op-project').value = 'Shell - DeepOcean - AOR Brent 2026';
+document.getElementById('op-vessel').value = 'Siri Knutsen';
+document.getElementById('op-type').value = 'Hose Deployment';
 
 // Set correct folder button label for Safari
 initFolderBtn();
@@ -2238,6 +2246,7 @@ if (restoreState()) {
   if (d.vessel) document.getElementById('op-vessel').value = d.vessel;
   if (d.type) document.getElementById('op-type').value = d.type;
   if (d.ref) document.getElementById('op-ref').value = d.ref;
+  if (d.projEng) document.getElementById('proj-eng').value = d.projEng;
   if (d.supDay) document.getElementById('sup-day').value = d.supDay;
   if (d.supNight) document.getElementById('sup-night').value = d.supNight;
   if (d.opDay1) document.getElementById('op-day1').value = d.opDay1;
