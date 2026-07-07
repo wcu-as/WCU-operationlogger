@@ -472,8 +472,9 @@ textarea { resize: none; }
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
       <button class="btn btn-outline" id="folder-btn" onclick="openTaskPlanFolder()" style="font-size:12px;padding:8px">
         <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-        Velg mappe
+        <span id="folder-btn-label">Velg mappe</span>
       </button>
+      <input type="file" id="multi-json-input" accept=".json" multiple style="display:none" onchange="loadMultipleJSONFiles(event)">
       <button class="btn btn-outline" onclick="prepareOffline()" style="font-size:12px;padding:8px;color:var(--amber);border-color:rgba(245,158,11,.3)">
         <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Forbered for offline
@@ -929,17 +930,56 @@ function addToDropdown(key, label) {
 }
 
 // ── FOLDER PICKER (File System Access API) ───────────────
+function isSafari() {
+  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+}
+
+// Set correct label on page load
+function initFolderBtn() {
+  const label = document.getElementById('folder-btn-label');
+  if (label && isSafari()) label.textContent = 'Last opp filer';
+}
+
 async function openTaskPlanFolder() {
-  if (!window.showDirectoryPicker) {
-    showToast('Mappe-velger støttes ikke i denne nettleseren — bruk Edge eller Chrome', true);
+  // Safari: fall back to multi-file input
+  if (isSafari() || !window.showDirectoryPicker) {
+    document.getElementById('multi-json-input').click();
     return;
   }
+  // Chrome/Edge: use directory picker
   try {
     folderHandle = await window.showDirectoryPicker({ mode: 'read' });
     await scanFolder(folderHandle);
   } catch(e) {
     if (e.name !== 'AbortError') showToast('Kunne ikke åpne mappen', true);
   }
+}
+
+async function loadMultipleJSONFiles(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  const status = document.getElementById('folder-status');
+  status.style.display = 'block';
+  status.textContent = 'Laster filer...';
+  let count = 0;
+  for (const file of files) {
+    try {
+      const text = await file.text();
+      const plan = JSON.parse(text);
+      if (plan.phases) {
+        const key = `folder_${file.name}`;
+        taskPlanLibrary[key] = plan;
+        const label = `${plan.ref || ''} · ${plan.name || file.name}`.replace(/^·\s*/, '');
+        addToDropdown(key, label);
+        count++;
+      }
+    } catch {}
+  }
+  status.textContent = count > 0
+    ? `📁 ${count} task plan${count !== 1 ? 'er' : ''} lastet`
+    : '⚠️ Ingen gyldige JSON task plans funnet i valgte filer';
+  if (count > 0) showToast(`${count} task plan${count !== 1 ? 'er' : ''} lastet ✓`);
+  e.target.value = '';
 }
 
 async function scanFolder(handle) {
@@ -1926,6 +1966,9 @@ document.getElementById('op-date').value = new Date().toISOString().split('T')[0
 document.getElementById('op-project').value = 'Skandi Installer — Coflexip';
 document.getElementById('op-vessel').value = 'Skandi Installer';
 document.getElementById('op-type').value = 'Coflexip Deployment';
+
+// Set correct folder button label for Safari
+initFolderBtn();
 
 // Show share availability hint
 if (!navigator.share) {
