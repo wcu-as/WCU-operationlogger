@@ -1,4 +1,4 @@
-<!-- WCU OpLogger v21 — 2026-07-07 -->
+<!-- WCU OpLogger v22 — 2026-07-07b -->
 <!DOCTYPE html>
 <html lang="no">
 <head>
@@ -1861,12 +1861,12 @@ function renderOverview() {
     <div class="title">${plan.name}</div>
     <div class="sub">${d.project} · ${d.vessel} · ${d.type}</div>
     <div class="tags">
-      <span class="tag">Dato: ${d.date}</span>
+      <span class="tag">Date: ${d.date}</span>
       <span class="tag accent">${appState.logs.length} / ${totalSteps} steps logged${appState.freeNotes.length ? ` · ${appState.freeNotes.length} note` : ''}</span>
     </div>
   </div>`;
 
-  html += `<div class="phase-header">Kronologisk hendelseslogg</div>`;
+  html += `<div class="phase-header">Chronological event log</div>`;
   sorted.forEach((log, i) => {
     const prev = i > 0 ? sorted[i - 1].time : appState.startTime;
     const delta = formatElapsed(log.time - prev);
@@ -1874,23 +1874,24 @@ function renderOverview() {
       const imgs = appState.images.filter(i => i.ownerKey === log.id);
       html += `<div class="log-entry" style="border-left-color:var(--amber)">
         <div class="le-header">
-          <span class="le-step" style="color:var(--amber)">📝 Notat</span>
+          <span class="le-step" style="color:var(--amber)">📝 Note</span>
           <span class="le-time" style="color:var(--amber)">${formatTime(log.time)}</span>
         </div>
-        <div class="le-delta">+${delta} siden ${i === 0 ? 'start' : 'forrige hendelse'}</div>
+        <div class="le-delta">+${delta} ${i === 0 ? 'since start' : 'since previous event'}</div>
         <div class="le-comment" style="font-style:normal;color:var(--text)">${log.text}</div>
         ${imgs.length ? `<div class="img-strip" style="margin-top:8px">${imgs.map(img=>`<img class="img-thumb" src="${img.dataUrl}" onclick="openLightbox('${img.dataUrl}')" title="${img.filename}">`).join('')}</div>` : ''}
       </div>`;
     } else {
       const imgs = appState.images.filter(i => i.ownerKey === log.key);
       const phase = plan.phases[log.phaseIdx];
-      const stepName = phase.steps[log.stepIdx];
+      const stepRaw = phase.steps[log.stepIdx];
+      const stepName = typeof stepRaw === 'object' ? stepRaw.desc : stepRaw;
       html += `<div class="log-entry">
         <div class="le-header">
-          <span class="le-step">${phase.name.split(' ')[0]} S${log.stepIdx + 1}: ${stepName}</span>
+          <span class="le-step">${phase.name} S${log.stepIdx + 1}: ${stepName}</span>
           <span class="le-time">${formatTime(log.time)}</span>
         </div>
-        <div class="le-delta">+${delta} siden ${i === 0 ? 'start' : 'forrige hendelse'}</div>
+        <div class="le-delta">+${delta} ${i === 0 ? 'since start' : 'since previous event'}</div>
         ${log.comment ? `<div class="le-comment">"${log.comment}"</div>` : ''}
         ${imgs.length ? `<div class="img-strip" style="margin-top:8px">${imgs.map(img=>`<img class="img-thumb" src="${img.dataUrl}" onclick="openLightbox('${img.dataUrl}')" title="${img.filename}">`).join('')}</div>` : ''}
       </div>`;
@@ -2215,7 +2216,11 @@ setInterval(() => {
 
 // PWA service worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/WCU-operationlogger/sw.js', {scope: '/WCU-operationlogger/'}).catch(() => {});
+  navigator.serviceWorker.register('/WCU-operationlogger/sw.js?v=21', {scope: '/WCU-operationlogger/'})
+    .then(reg => {
+      reg.update(); // Force check for new version immediately
+    })
+    .catch(() => {});
 }
 </script>
 
