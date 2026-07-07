@@ -375,7 +375,8 @@ textarea { resize: none; }
   width: 72px; height: 72px; border-radius: 50%; border: 1px solid var(--border2);
   background: var(--surface); color: var(--text); font-size: 22px; font-weight: 500;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: background .1s;
+  transition: background .1s; touch-action: manipulation; user-select: none;
+  -webkit-user-select: none;
 }
 .pin-key:active { background: var(--surface2); transform: scale(0.94); }
 .pin-key.del { font-size: 16px; color: var(--text2); }
@@ -399,19 +400,19 @@ textarea { resize: none; }
     <div class="pin-dot" id="dot-3"></div>
   </div>
   <div class="lock-error" id="lock-error"></div>
-  <div class="pin-grid">
-    <button class="pin-key" onclick="pinKey('1')">1</button>
-    <button class="pin-key" onclick="pinKey('2')">2</button>
-    <button class="pin-key" onclick="pinKey('3')">3</button>
-    <button class="pin-key" onclick="pinKey('4')">4</button>
-    <button class="pin-key" onclick="pinKey('5')">5</button>
-    <button class="pin-key" onclick="pinKey('6')">6</button>
-    <button class="pin-key" onclick="pinKey('7')">7</button>
-    <button class="pin-key" onclick="pinKey('8')">8</button>
-    <button class="pin-key" onclick="pinKey('9')">9</button>
-    <button class="pin-key empty"></button>
-    <button class="pin-key" onclick="pinKey('0')">0</button>
-    <button class="pin-key del" onclick="pinDel()">⌫</button>
+<div class="pin-grid">
+    <button type="button" class="pin-key" ontouchstart="event.preventDefault();pinKey('1')" onclick="pinKey('1')">1</button>
+    <button type="button" class="pin-key" ontouchstart="event.preventDefault();pinKey('2')" onclick="pinKey('2')">2</button>
+    <button type="button" class="pin-key" ontouchstart="event.preventDefault();pinKey('3')" onclick="pinKey('3')">3</button>
+    <button type="button" class="pin-key" ontouchstart="event.preventDefault();pinKey('4')" onclick="pinKey('4')">4</button>
+    <button type="button" class="pin-key" ontouchstart="event.preventDefault();pinKey('5')" onclick="pinKey('5')">5</button>
+    <button type="button" class="pin-key" ontouchstart="event.preventDefault();pinKey('6')" onclick="pinKey('6')">6</button>
+    <button type="button" class="pin-key" ontouchstart="event.preventDefault();pinKey('7')" onclick="pinKey('7')">7</button>
+    <button type="button" class="pin-key" ontouchstart="event.preventDefault();pinKey('8')" onclick="pinKey('8')">8</button>
+    <button type="button" class="pin-key" ontouchstart="event.preventDefault();pinKey('9')" onclick="pinKey('9')">9</button>
+    <button type="button" class="pin-key empty" disabled></button>
+    <button type="button" class="pin-key" ontouchstart="event.preventDefault();pinKey('0')" onclick="pinKey('0')">0</button>
+    <button type="button" class="pin-key del" ontouchstart="event.preventDefault();pinDel()" onclick="pinDel()">⌫</button>
   </div>
   <div class="lock-hint">Skriv inn PIN-koden</div>
 </div>
