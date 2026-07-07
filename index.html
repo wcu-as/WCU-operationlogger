@@ -739,6 +739,183 @@ if (sessionStorage.getItem(SESSION_KEY) === '1') {
   document.getElementById('lockscreen').style.display = 'none';
 }
 
+// ── LANGUAGE SYSTEM ───────────────────────────────────────
+const STRINGS = {
+  no: {
+    // Tabs
+    tab_setup: 'Oppsett', tab_log: 'Logg', tab_overview: 'Oversikt', tab_export: 'Eksport',
+    // Setup
+    task_plan: 'Task Plan', select_plan: 'Velg task plan', builtin_coflexip: 'SOP_005-101 · Coflexip Deployment (innebygd)',
+    pick_folder: 'Velg mappe', pick_files: 'Last opp filer', prep_offline: 'Forbered for offline',
+    upload_json: 'Last opp .json eller .xlsx',
+    op_info: 'Operasjonsinformasjon', date: 'Dato', project: 'Project / Felt', vessel: 'Fartøy (Vessel)',
+    operation: 'Operasjon', ref: 'Referansenummer (SOP / WO)',
+    personnel: 'Personell', dayshift: 'Dagvakt', nightshift: 'Nattvakt',
+    sup_day: 'Supervisor dag', sup_night: 'Supervisor natt',
+    op_day: 'Operatører dag', op_night: 'Operatører natt',
+    op_day1: 'Operator dag 1', op_day2: 'Operator dag 2',
+    op_night1: 'Operator natt 1', op_night2: 'Operator natt 2',
+    name_ph: 'Navn',
+    op_type_stim: 'Stim', op_type_restim: 'Re-stim', op_type_scale: 'Scale squeeze',
+    op_type_deploy: 'Coflexip Deployment', op_type_recovery: 'Coflexip Recovery', op_type_other: 'Annet',
+    start_op: 'Start operasjon', op_running: 'Operasjon pågår — gå til logg',
+    // Log
+    elapsed: 'Tid ${t('since_start')}', steps_of: 'steg', notes_count: 'notat',
+    focus: 'Fokus', list: 'Liste',
+    log_btn: 'Logg tidspunkt', logged_next: 'Logget — neste steg',
+    comment_ph: 'Kommentar for dette steget...', note_ph: 'Avvik, observasjon, hendelse...',
+    save: 'Lagre', cancel: 'Avbryt', log_note: 'Logg notat',
+    add_free_note: 'Legg til fritekst-notat', free_note_title: t('free_note_label'),
+    step_of: 'Steg', of: 'av', phase_label: 'Fase',
+    last_step: '${t('last_step')}',
+    prev_step: '↑ Steg', next_step: '↓ Steg',
+    swipe_hint: 'Sveip opp/ned for å navigere',
+    comment_saved: 'Kommentar lagret ✓', note_logged: 'Notat logget ✓',
+    write_comment: 'Skriv inn en kommentar først',
+    // Overview
+    no_events: 'Ingen hendelser logget', go_to_log: 'Gå til Logg og registrer steg.',
+    chrono_log: 'Kronologisk hendelseslogg',
+    since_start: '${t('since_start')}', since_prev: '${t('since_prev')}',
+    free_note_label: '📝 Notat',
+    // Export
+    share_export: 'Del og eksporter',
+    share_desc: 'Del åpner Teams, e-post, AirDrop eller andre apper direkte. Zip-pakken inneholder Excel + alle bilder med klikkbare lenker.',
+    share_btn: 'Del via Teams / e-post / AirDrop',
+    share_unavail: 'Deling ikke støttet i denne nettleseren. Bruk nedlasting nedenfor og del filen manuelt.',
+    dl_zip: 'Last ned ZIP (Excel + bilder)', dl_xlsx: 'Kun Excel (.xlsx)', dl_csv: 'Kun CSV',
+    editor_card: 'Task Plan Editor', editor_desc: 'Lag og rediger task plans med illustrasjoner. Åpnes i ny fane.',
+    open_editor: 'Åpne Task Plan Editor',
+    reset_card: 'Reset operasjon', reset_btn: 'Nullstill og start ny operasjon',
+    // Offline prep
+    offline_title: '⚓ Klar for offline',
+    offline_desc_pre: 'Gjør dette', offline_desc_bold: 'før du drar', offline_desc_post: 'mens du har nett:',
+    offline_step1: '1. Trykk', offline_step1b: 'og pek til Teams/OneDrive-mappen med task plans',
+    offline_step2: '2. Velg ønsket task plan fra nedtrekksmenyen',
+    offline_step3: '3. Trykk', offline_step3b: 'nedenfor',
+    save_offline: 'Lagre valgt plan for offline', clear_offline: 'Tøm buffer', close: 'Lukk',
+    no_offline: 'Ingen planer lagret for offline ennå',
+    select_first: 'Velg en task plan først',
+    saved_offline: '✓ lagret for offline',
+    // Toasts
+    op_started: 'Operasjon startet ✓', comment_saved_t: 'Kommentar lagret ✓',
+    note_saved_t: 'Notat logget ✓', img_added: 'Bilde lagt til ✓',
+    restored: '⚡ Pågående operasjon gjenopprettet',
+    // Status
+    elapsed_label: 'Tid siden start',
+    operation_ongoing: 'Operasjon pågår',
+    // Reset confirm
+    reset_confirm: 'Nullstill og starte ny operasjon? Eksportér loggen først!',
+    // Share
+    sharing_packing: 'Pakker fil...',
+    shared_ok: 'Delt ✓',
+    share_text_only: 'Tekst delt — last ned filen separat',
+    share_failed: 'Deling feilet — bruk nedlasting',
+    packing_zip: 'Pakker zip...',
+    zip_downloaded: 'Zip lastet ned',
+    images: 'bilde', images_pl: 'bilder',
+    xlsx_downloaded: 'Excel lastet ned ✓',
+    csv_downloaded: 'CSV lastet ned ✓',
+    no_events_export: 'Ingen hendelser å eksportere',
+    no_events_share: 'Ingen hendelser å dele',
+    // Folder
+    folder_scanning: 'Skanner mappe...',
+    folder_loaded: 'task plan lastet fra mappe',
+    folder_loaded_pl: 'task planer lastet fra mappe',
+    folder_empty: 'ingen JSON-filer funnet',
+    files_loaded: 'task plan lastet',
+    files_loaded_pl: 'task planer lastet',
+    files_none: 'Ingen gyldige JSON task plans funnet i valgte filer',
+    offline_restored: 'klar for offline',
+  },
+  en: {
+    tab_setup: 'Setup', tab_log: 'Log', tab_overview: 'Overview', tab_export: 'Export',
+    task_plan: 'Task Plan', select_plan: 'Select task plan', builtin_coflexip: 'SOP_005-101 · Coflexip Deployment (built-in)',
+    pick_folder: 'Select folder', pick_files: 'Upload files', prep_offline: 'Prepare offline',
+    upload_json: 'Upload .json or .xlsx',
+    op_info: 'Operation information', date: 'Date', project: 'Project / Field', vessel: 'Vessel',
+    operation: 'Operation type', ref: 'Reference number (SOP / WO)',
+    personnel: 'Personnel', dayshift: 'Day shift', nightshift: 'Night shift',
+    sup_day: 'Supervisor day', sup_night: 'Supervisor night',
+    op_day: 'Operators day', op_night: 'Operators night',
+    op_day1: 'Operator day 1', op_day2: 'Operator day 2',
+    op_night1: 'Operator night 1', op_night2: 'Operator night 2',
+    name_ph: 'Name',
+    op_type_stim: 'Stim', op_type_restim: 'Re-stim', op_type_scale: 'Scale squeeze',
+    op_type_deploy: 'Coflexip Deployment', op_type_recovery: 'Coflexip Recovery', op_type_other: 'Other',
+    start_op: 'Start operation', op_running: 'Operation in progress — go to log',
+    elapsed: 'Time since start', steps_of: 'steps', notes_count: 'note',
+    focus: 'Focus', list: 'List',
+    log_btn: 'Log timestamp', logged_next: 'Logged — next step',
+    comment_ph: 'Comment for this step...', note_ph: 'Deviation, observation, event...',
+    save: 'Save', cancel: 'Cancel', log_note: 'Log note',
+    add_free_note: 'Add free-text note', free_note_title: 'Free-text note',
+    step_of: 'Step', of: 'of', phase_label: 'Phase',
+    last_step: '✓ Last step in operation',
+    prev_step: '↑ Step', next_step: '↓ Step',
+    swipe_hint: 'Swipe up/down to navigate',
+    comment_saved: 'Comment saved ✓', note_logged: 'Note logged ✓',
+    write_comment: 'Enter a comment first',
+    no_events: 'No events logged', go_to_log: 'Go to Log and register steps.',
+    chrono_log: 'Chronological event log',
+    since_start: 'since start', since_prev: 'since previous event',
+    free_note_label: '📝 Note',
+    share_export: 'Share and export',
+    share_desc: 'Share opens Teams, email, AirDrop or other apps directly. The zip contains Excel + all images with clickable links.',
+    share_btn: 'Share via Teams / email / AirDrop',
+    share_unavail: 'Sharing not supported in this browser. Use download below and share the file manually.',
+    dl_zip: 'Download ZIP (Excel + images)', dl_xlsx: 'Excel only (.xlsx)', dl_csv: 'CSV only',
+    editor_card: 'Task Plan Editor', editor_desc: 'Create and edit task plans with illustrations. Opens in new tab.',
+    open_editor: 'Open Task Plan Editor',
+    reset_card: 'Reset operation', reset_btn: 'Reset and start new operation',
+    offline_title: '⚓ Ready for offline',
+    offline_desc_pre: 'Do this', offline_desc_bold: 'before you leave', offline_desc_post: 'while you have internet:',
+    offline_step1: '1. Press', offline_step1b: 'and point to the Teams/OneDrive folder with task plans',
+    offline_step2: '2. Select desired task plan from the dropdown',
+    offline_step3: '3. Press', offline_step3b: 'below',
+    save_offline: 'Save selected plan for offline', clear_offline: 'Clear buffer', close: 'Close',
+    no_offline: 'No plans saved for offline yet',
+    select_first: 'Select a task plan first',
+    saved_offline: '✓ saved for offline',
+    op_started: 'Operation started ✓', comment_saved_t: 'Comment saved ✓',
+    note_saved_t: 'Note logged ✓', img_added: 'Image added ✓',
+    restored: '⚡ Ongoing operation restored',
+    elapsed_label: 'Time since start',
+    operation_ongoing: 'Operation in progress',
+    reset_confirm: 'Reset and start new operation? Export the log first!',
+    sharing_packing: 'Packing file...',
+    shared_ok: 'Shared ✓',
+    share_text_only: 'Text shared — download file separately',
+    share_failed: 'Sharing failed — use download',
+    packing_zip: 'Packing zip...',
+    zip_downloaded: 'Zip downloaded',
+    images: 'image', images_pl: 'images',
+    xlsx_downloaded: 'Excel downloaded ✓',
+    csv_downloaded: 'CSV downloaded ✓',
+    no_events_export: 'No events to export',
+    no_events_share: 'No events to share',
+    folder_scanning: 'Scanning folder...',
+    folder_loaded: 'task plan loaded from folder',
+    folder_loaded_pl: 'task plans loaded from folder',
+    folder_empty: 'no JSON files found',
+    files_loaded: 'task plan loaded',
+    files_loaded_pl: 'task plans loaded',
+    files_none: 'No valid JSON task plans found in selected files',
+    offline_restored: 'ready for offline',
+  }
+};
+
+function getLang() {
+  const plan = appState.taskPlan;
+  if (plan && plan.language === 'en') return 'en';
+  return 'no';
+}
+
+function t(key) {
+  const lang = getLang();
+  return STRINGS[lang][key] || STRINGS['no'][key] || key;
+}
+// ─────────────────────────────────────────────────────────
+
 const TASK_PLANS = {
   "SOP_005-101": {
     name: "Coflexip Deployment — Deck Winch",
@@ -903,6 +1080,44 @@ function selectFromDropdown(val) {
     showTaskPlanLoaded(appState.taskPlan.name);
     document.getElementById('op-ref').value = appState.taskPlan.ref || val;
   }
+  updateTabLabels();
+}
+
+function updateTabLabels() {
+  const tabs = [
+    ['tab-setup', 'tab_setup'],
+    ['tab-log', 'tab_log'],
+    ['tab-overview', 'tab_overview'],
+    ['tab-export', 'tab_export'],
+  ];
+  tabs.forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el) {
+      // Keep the SVG, just update the text node
+      const spans = el.querySelectorAll('span');
+      if (spans.length) {
+        spans[spans.length - 1].textContent = t(key);
+      } else {
+        // Replace last text node
+        const nodes = el.childNodes;
+        for (let i = nodes.length - 1; i >= 0; i--) {
+          if (nodes[i].nodeType === 3 && nodes[i].textContent.trim()) {
+            nodes[i].textContent = '\n        ' + t(key) + '\n      ';
+            break;
+          }
+        }
+      }
+    }
+  });
+  // Update start operation button if visible
+  const startBtn = document.querySelector('#start-btn-area .btn-primary');
+  if (startBtn) {
+    const textNode = Array.from(startBtn.childNodes).find(n => n.nodeType === 3 && n.textContent.trim());
+    if (textNode) textNode.textContent = '\n      ' + t('start_op') + '\n    ';
+  }
+  // Update folder button label
+  const folderLabel = document.getElementById('folder-btn-label');
+  if (folderLabel) folderLabel.textContent = isSafari() ? t('pick_files') : t('pick_folder');
 }
 
 // Keep old function name for compatibility
@@ -985,7 +1200,7 @@ async function loadMultipleJSONFiles(e) {
 async function scanFolder(handle) {
   const status = document.getElementById('folder-status');
   status.style.display = 'block';
-  status.textContent = 'Skanner mappe...';
+  status.textContent = t('folder_scanning');
   let count = 0;
   for await (const entry of handle.values()) {
     if (entry.kind === 'file' && entry.name.endsWith('.json')) {
@@ -1256,7 +1471,7 @@ function saveComment(key) {
   appState.commentDraft = '';
   saveState();
   renderLog();
-  showToast('Kommentar lagret ✓');
+  showToast(t('comment_saved_t'));
 }
 
 function addFreeNote() {
@@ -1268,7 +1483,7 @@ function addFreeNote() {
   appState.freeNoteDraft = '';
   saveState();
   renderLog();
-  showToast('Notat logget ✓');
+  showToast(t('note_saved_t'));
 }
 
 function deleteFreeNote(id) {
@@ -1302,7 +1517,7 @@ function handleImageFile(e) {
     appState.pendingImageKey = null;
     saveState();
     renderLog();
-    showToast('Bilde lagt til ✓');
+    showToast(t('img_added'));
   };
   reader.readAsDataURL(file);
 }
@@ -1402,7 +1617,7 @@ function renderFocus() {
   if (prev) {
     const prevLog = appState.logs.find(l => l.key === prev.key);
     html += `<div class="focus-adjacent prev${prevLog?' done':''}" onclick="focusNavigate(${idx-1})">
-      <div class="fa-num">↑ Steg ${idx}</div>
+      <div class="fa-num">${t('prev_step')} ${idx}</div>
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
         <div class="fa-name">${prev.step}</div>
         ${prevLog ? `<div class="fa-time">${formatTime(prevLog.time)}</div>` : ''}
@@ -1416,7 +1631,7 @@ function renderFocus() {
   // Main step
   html += `<div class="focus-main">
     <div class="focus-phase">${curr.phase}</div>
-    <div class="focus-num">Steg ${idx + 1} av ${total}</div>
+    <div class="focus-num">${t('step_of')} ${idx + 1} ${t('of')} ${total}</div>
     <div class="focus-name">${curr.step}</div>`;
 
   // Task plan illustration — store in temp var to avoid base64 in onclick
@@ -1439,19 +1654,19 @@ function renderFocus() {
     ${isDone
       ? `<button class="focus-log-btn done" onclick="focusNavigate(${Math.min(idx+1, total-1)})">
            <svg style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-           Logget — neste steg
+           ${t('logged_next')}
          </button>`
       : `<button class="focus-log-btn" onclick="focusLogStep(${curr.pi},${curr.si},${idx})">
            <svg style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
-           Logg tidspunkt
+           ${t('log_btn')}
          </button>`}
-    <button class="focus-icon-btn${isDone && log.comment ? ' active' : ''}" onclick="toggleComment('${key}')" title="Kommentar">
+    <button class="focus-icon-btn${isDone && log.comment ? ' active' : ''}" onclick="toggleComment('${key}')" title="${t('save')}">
       <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
     </button>
-    <button class="focus-icon-btn${isNoteOpen ? ' amber' : ''}" onclick="toggleComment('${noteKey}')" title="Fritekst-notat">
+    <button class="focus-icon-btn${isNoteOpen ? ' amber' : ''}" onclick="toggleComment('${noteKey}')" title="${t('add_free_note')}">
       <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
-    <button class="focus-icon-btn${imgs.length ? ' active' : ''}" onclick="openImagePicker('${key}')" title="Legg til bilde">
+    <button class="focus-icon-btn${imgs.length ? ' active' : ''}" onclick="openImagePicker('${key}')" title="${t('img_added')}">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
     </button>
   </div>`;
@@ -1459,10 +1674,10 @@ function renderFocus() {
   // Comment box
   if (isCommentOpen) {
     html += `<div class="step-comment-box" style="margin-bottom:10px">
-      <textarea rows="3" placeholder="Kommentar for dette steget..." oninput="appState.commentDraft=this.value">${appState.commentDraft}</textarea>
+      <textarea rows="3" placeholder="${t('comment_ph')}" oninput="appState.commentDraft=this.value">${appState.commentDraft}</textarea>
       <div class="comment-actions">
-        <button class="btn-small" onclick="appState.activeComment=null;renderLog()">Avbryt</button>
-        <button class="btn-small primary" onclick="saveComment('${key}')">Lagre</button>
+        <button class="btn-small" onclick="appState.activeComment=null;renderLog()">${t('cancel')}</button>
+        <button class="btn-small primary" onclick="saveComment('${key}')">${t('save')}</button>
       </div>
     </div>`;
   }
@@ -1473,11 +1688,11 @@ function renderFocus() {
   // Free note box
   if (isNoteOpen) {
     html += `<div class="step-comment-box" style="margin-bottom:10px">
-      <div style="font-size:11px;font-weight:600;color:var(--amber);margin-bottom:6px">Fritekst-notat</div>
-      <textarea rows="3" placeholder="Avvik, observasjon, hendelse..." oninput="appState.freeNoteDraft=this.value" style="border-color:rgba(245,158,11,.3)">${appState.freeNoteDraft}</textarea>
+      <div style="font-size:11px;font-weight:600;color:var(--amber);margin-bottom:6px">${t('free_note_title')}</div>
+      <textarea rows="3" placeholder="${t('note_ph')}" oninput="appState.freeNoteDraft=this.value" style="border-color:rgba(245,158,11,.3)">${appState.freeNoteDraft}</textarea>
       <div class="comment-actions">
-        <button class="btn-small" onclick="appState.activeComment=null;appState.freeNoteDraft='';renderLog()">Avbryt</button>
-        <button class="btn-small primary" style="background:var(--amber);border-color:var(--amber)" onclick="addFreeNote()">Logg notat</button>
+        <button class="btn-small" onclick="appState.activeComment=null;appState.freeNoteDraft='';renderLog()">${t('cancel')}</button>
+        <button class="btn-small primary" style="background:var(--amber);border-color:var(--amber)" onclick="addFreeNote()">${t('log_note')}</button>
       </div>
     </div>`;
   }
@@ -1519,7 +1734,7 @@ function renderFocus() {
       </div>
     </div>`;
   } else {
-    html += `<div style="padding:12px 16px;text-align:center;font-size:12px;color:var(--green);font-weight:600">✓ Siste steg i operasjonen</div>`;
+    html += `<div style="padding:12px 16px;text-align:center;font-size:12px;color:var(--green);font-weight:600">${t('last_step')}</div>`;
   }
 
   html += `</div>`; // end focus-wrap
@@ -1571,26 +1786,26 @@ function renderLog() {
       <div class="title">${plan.name}</div>
       <div class="sub">${appState.opData.project} · ${appState.opData.vessel}</div>
       <div class="tags">
-        <span class="tag accent">${appState.opData.type || 'Operasjon'}</span>
-        <span class="tag">Start ${formatTime(appState.startTime)}</span>
-        <span class="tag">${appState.opData.supDay || '—'} (dag)</span>
+        <span class="tag accent">${appState.opData.type || t('operation')}</span>
+        <span class="tag">${t('start_op')} ${formatTime(appState.startTime)}</span>
+        <span class="tag">${appState.opData.supDay || '—'} (${t('dayshift').toLowerCase()})</span>
       </div>
     </div>
     <div class="elapsed-bar">
       <div>
-        <div class="elapsed-label">Tid siden start</div>
+        <div class="elapsed-label">${t('elapsed')}</div>
         <div class="elapsed-val" id="elapsed-live">${elapsed}</div>
       </div>
-      <div class="step-count">${doneSteps} / ${totalSteps} steg${noteCount ? ` · ${noteCount} notat` : ''}</div>
+      <div class="step-count">${doneSteps} / ${totalSteps} ${t('steps_of')}${noteCount ? ` · ${noteCount} ${t('notes_count')}` : ''}</div>
     </div>
     <div class="view-toggle">
       <button class="view-btn${appState.logView==='focus'?' active':''}" onclick="appState.logView='focus';renderLog()">
         <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1"/><line x1="3" y1="4" x2="21" y2="4" stroke-opacity=".4"/><line x1="3" y1="20" x2="21" y2="20" stroke-opacity=".4"/></svg>
-        Fokus
+        ${t('focus')}
       </button>
       <button class="view-btn${appState.logView==='list'?' active':''}" onclick="appState.logView='list';renderLog()">
         <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-        Liste
+        ${t('list')}
       </button>
     </div>`;
 
@@ -1635,18 +1850,18 @@ function renderLog() {
         ${stepIllustration ? `<img src="${stepIllustration}" onclick="openLightbox(this.src)" style="width:100%;max-height:160px;object-fit:contain;border-radius:8px;margin-top:8px;cursor:zoom-in;background:var(--surface2);border:1px solid var(--border2)" alt="Illustrasjon">` : ''}
         ${isDone && log.comment && !isCommentOpen ? `<div class="step-comment-text">"${log.comment}"</div>` : ''}
         ${isCommentOpen ? `<div class="step-comment-box">
-          <textarea rows="3" placeholder="Kommentar for dette steget..." oninput="appState.commentDraft=this.value">${appState.commentDraft}</textarea>
+          <textarea rows="3" placeholder="${t('comment_ph')}" oninput="appState.commentDraft=this.value">${appState.commentDraft}</textarea>
           <div class="comment-actions">
-            <button class="btn-small" onclick="appState.activeComment=null;renderLog()">Avbryt</button>
-            <button class="btn-small primary" onclick="saveComment('${key}')">Lagre</button>
+            <button class="btn-small" onclick="appState.activeComment=null;renderLog()">${t('cancel')}</button>
+            <button class="btn-small primary" onclick="saveComment('${key}')">${t('save')}</button>
           </div>
         </div>` : ''}
         ${isNoteOpen ? `<div class="step-comment-box">
-          <div style="font-size:11px;font-weight:600;color:var(--amber);margin-bottom:6px">Fritekst-notat</div>
-          <textarea rows="3" placeholder="Avvik, observasjon, hendelse..." oninput="appState.freeNoteDraft=this.value" style="border-color:rgba(245,158,11,.3)">${appState.freeNoteDraft}</textarea>
+          <div style="font-size:11px;font-weight:600;color:var(--amber);margin-bottom:6px">${t('free_note_title')}</div>
+          <textarea rows="3" placeholder="${t('note_ph')}" oninput="appState.freeNoteDraft=this.value" style="border-color:rgba(245,158,11,.3)">${appState.freeNoteDraft}</textarea>
           <div class="comment-actions">
-            <button class="btn-small" onclick="appState.activeComment=null;appState.freeNoteDraft='';renderLog()">Avbryt</button>
-            <button class="btn-small primary" style="background:var(--amber);border-color:var(--amber)" onclick="addFreeNote()">Logg notat</button>
+            <button class="btn-small" onclick="appState.activeComment=null;appState.freeNoteDraft='';renderLog()">${t('cancel')}</button>
+            <button class="btn-small primary" style="background:var(--amber);border-color:var(--amber)" onclick="addFreeNote()">${t('log_note')}</button>
           </div>
         </div>` : ''}
         ${appState.freeNotes.filter(n => n.stepKey === noteKey).map(n => `
@@ -1764,7 +1979,7 @@ function getExportRows() {
   ];
   sorted.forEach((log, i) => {
     const prev = i > 0 ? sorted[i - 1].time : appState.startTime;
-    const fase = log.isFree ? 'Fritekst-notat' : plan.phases[log.phaseIdx].name;
+    const fase = log.isFree ? t('free_note_label') : plan.phases[log.phaseIdx].name;
     const stepRaw = log.isFree ? null : plan.phases[log.phaseIdx].steps[log.stepIdx];
     const steg = log.isFree ? log.text : (typeof stepRaw === 'object' ? stepRaw.desc : stepRaw);
     const kommentar = log.isFree ? '' : (log.comment || '');
@@ -1786,8 +2001,8 @@ function getExportRows() {
 }
 
 async function exportZip() {
-  if (!appState.logs.length && !appState.freeNotes.length) { showToast('Ingen hendelser å eksportere', true); return; }
-  showToast('Pakker zip...');
+  if (!appState.logs.length && !appState.freeNotes.length) { showToast(t('no_events_export'), true); return; }
+  showToast(t('packing_zip'));
 
   const { rows, sorted } = getExportRows();
   const plan = appState.taskPlan;
@@ -1836,7 +2051,7 @@ async function exportZip() {
 }
 
 function exportXLSX() {
-  if (!appState.logs.length && !appState.freeNotes.length) { showToast('Ingen hendelser å eksportere', true); return; }
+  if (!appState.logs.length && !appState.freeNotes.length) { showToast(t('no_events_export'), true); return; }
   const { rows } = getExportRows();
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -1845,7 +2060,7 @@ function exportXLSX() {
   const ref = appState.opData.ref || 'WCU-OpLog';
   const date = appState.opData.date || formatDate(new Date());
   XLSX.writeFile(wb, `${ref}-${date}.xlsx`);
-  showToast('Excel lastet ned ✓');
+  showToast(t('xlsx_downloaded'));
 }
 
 function exportCSV() {
@@ -1857,12 +2072,12 @@ function exportCSV() {
   const a = document.createElement('a');
   a.href = url; a.download = `${appState.opData.ref || 'WCU-OpLog'}.csv`;
   a.click(); URL.revokeObjectURL(url);
-  showToast('CSV lastet ned ✓');
+  showToast(t('csv_downloaded'));
 }
 
 async function shareLog() {
   if (!appState.logs.length && !appState.freeNotes.length) {
-    showToast('Ingen hendelser å dele', true); return;
+    showToast(t('no_events_share'), true); return;
   }
 
   const ref = appState.opData.ref || 'WCU-OpLog';
@@ -1877,7 +2092,7 @@ async function shareLog() {
     return;
   }
 
-  showToast('Pakker fil...');
+  showToast(t('sharing_packing'));
 
   try {
     let file;
@@ -1926,22 +2141,22 @@ async function shareLog() {
 
     if (navigator.canShare(shareData)) {
       await navigator.share(shareData);
-      showToast('Delt ✓');
+      showToast(t('shared_ok'));
     } else {
       // File sharing not supported, try without file
       const shareNoFile = { title: shareData.title, text: shareData.text };
       await navigator.share(shareNoFile);
-      showToast('Tekst delt — last ned filen separat');
+      showToast(t('share_text_only'));
     }
   } catch (err) {
     if (err.name !== 'AbortError') {
-      showToast('Deling feilet — bruk nedlasting', true);
+      showToast(t('share_failed'), true);
     }
   }
 }
 
 function resetOperation() {
-  if (!confirm('Nullstill og starte ny operasjon? Eksportér loggen først!')) return;
+  if (!confirm(t('reset_confirm'))) return;
   appState = { started: false, startTime: null, opData: {}, logs: [], freeNotes: [], images: [], activeComment: null, commentDraft: '', taskPlan: null, freeNoteOpen: false, freeNoteDraft: '', pendingImageKey: null };
   localStorage.removeItem(SAVE_KEY);
   document.getElementById('live-badge').style.display = 'none';
@@ -2013,7 +2228,7 @@ if (restoreState()) {
   if (d.opDay2) document.getElementById('op-day2').value = d.opDay2;
   if (d.opNight1) document.getElementById('op-night1').value = d.opNight1;
   if (d.opNight2) document.getElementById('op-night2').value = d.opNight2;
-  if (appState.taskPlan) showTaskPlanLoaded(appState.taskPlan.name);
+  if (appState.taskPlan) { showTaskPlanLoaded(appState.taskPlan.name); updateTabLabels(); }
 }
 // ─────────────────────────────────────────────────────────
 
