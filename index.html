@@ -520,7 +520,7 @@ textarea { resize: none; }
 
     <!-- Dropdown populated from folder/GitHub -->
     <div class="field">
-      <label>Velg task plan</label>
+      <label>Select task plan</label>
       <select id="taskplan-select" onchange="selectFromDropdown(this.value)">
         <option value="">— Select task plan —</option>
         <option value="__builtin_SOP_005-101">SOP_005-101 · Coflexip Deployment (built-in)</option>
@@ -546,16 +546,16 @@ textarea { resize: none; }
     <div id="offline-prep-modal" style="display:none;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px">
       <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:8px">⚓ Ready for offline</div>
       <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px">
-        Do this <strong style="color:var(--text)">before you leave</strong> mens du har nett:<br>
-        1. Trykk <strong style="color:var(--text)">Select folder</strong> and point to the Teams/OneDrive folder with task plans<br>
+        Do this <strong style="color:var(--text)">before you leave</strong> while you have internet:<br>
+        1. Press <strong style="color:var(--text)">Select folder</strong> and point to the Teams/OneDrive folder with task plans<br>
         2. Select the desired task plan from the dropdown<br>
-        3. Trykk <strong style="color:var(--text)">Lagre for offline</strong> nedenfor
+        3. Press <strong style="color:var(--text)">Save for offline</strong> below
       </div>
       <div id="offline-saved-list" style="margin-bottom:10px"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-small primary" onclick="saveCurrentPlanOffline()" style="font-size:12px">
           <svg style="width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
-          Lagre valgt plan for offline
+          Save selected plan for offline
         </button>
         <button class="btn-small" onclick="clearOfflinePlans()" style="color:var(--red);border-color:rgba(248,81,73,.3)">Clear buffer</button>
         <button class="btn-small" onclick="document.getElementById('offline-prep-modal').style.display='none'">Close</button>
@@ -569,7 +569,7 @@ textarea { resize: none; }
     </div>
     <button class="btn btn-outline" onclick="document.getElementById('taskplan-file-input').click()" style="font-size:13px;padding:9px">
       <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Last opp .json eller .xlsx
+      Upload .json or .xlsx
     </button>
     <input type="file" id="taskplan-file-input" accept=".xlsx,.xls,.json" style="display:none" onchange="loadTaskPlanFile(event)">
     <div id="taskplan-loaded" style="display:none;margin-top:10px;padding:8px 12px;background:var(--green-bg);border:1px solid rgba(15,186,116,.25);border-radius:var(--radius);font-size:12px;color:var(--green);font-weight:500"></div>
@@ -591,7 +591,7 @@ textarea { resize: none; }
       <input type="text" id="op-vessel" placeholder="f.eks. Skandi Installer">
     </div>
     <div class="field">
-      <label>Operasjon</label>
+      <label>Operation type</label>
       <select id="op-type">
         <option value="">Select operation...</option>
         <option>Stim</option>
@@ -652,7 +652,7 @@ textarea { resize: none; }
   <div id="start-btn-area">
     <button class="btn btn-primary" onclick="startOperation()">
       <svg style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
-      Start operasjon
+      Start operation
     </button>
   </div>
 
@@ -734,7 +734,7 @@ textarea { resize: none; }
     <div class="card-title">Reset operation</div>
     <button class="btn btn-outline" style="color:var(--red);border-color:rgba(239,68,68,.3)" onclick="resetOperation()">
       <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
-      Nullstill og start ny operasjon
+      Reset and start new operation
     </button>
   </div>
 </div>
@@ -760,9 +760,9 @@ const STRINGS = {
     // Tabs
     tab_setup: 'Oppsett', tab_log: 'Logg', tab_overview: 'Oversikt', tab_export: 'Eksport',
     // Setup
-    task_plan: 'Task Plan', select_plan: 'Velg task plan', builtin_coflexip: 'SOP_005-101 · Coflexip Deployment (built-in)',
+    task_plan: 'Task Plan', select_plan: 'Select task plan', builtin_coflexip: 'SOP_005-101 · Coflexip Deployment (built-in)',
     pick_folder: 'Select folder', pick_files: 'Upload files', prep_offline: 'Forbered for offline',
-    upload_json: 'Last opp .json eller .xlsx',
+    upload_json: 'Upload .json or .xlsx',
     op_info: 'Operation Information', date: 'Dato', project: 'Project / Field', vessel: 'Vessel',
     operation: 'Operation', ref: 'Reference (SOP / WO)',
     personnel: 'Personnel', dayshift: 'Dagvakt', nightshift: 'Nattvakt',
@@ -773,9 +773,9 @@ const STRINGS = {
     name_ph: 'Navn',
     op_type_stim: 'Stim', op_type_restim: 'Re-stim', op_type_scale: 'Scale squeeze',
     op_type_deploy: 'Coflexip Deployment', op_type_recovery: 'Coflexip Recovery', op_type_other: 'Annet',
-    start_op: 'Start operasjon', op_running: 'Operation in progress — go to log',
+    start_op: 'Start operation', op_running: 'Operation in progress — go to log',
     // Log
-    elapsed: 'Time since start', steps_of: 'steg', notes_count: 'notat',
+    elapsed: 'Time since start', steps_of: 'steps', notes_count: 'note',
     focus: 'Focus', list: 'List',
     log_btn: 'Log timestamp', logged_next: 'Logged — next step',
     comment_ph: 'Kommentar for dette steget...', note_ph: 'Avvik, observasjon, hendelse...',
@@ -788,7 +788,7 @@ const STRINGS = {
     comment_saved: 'Comment saved ✓', note_logged: 'Note logged ✓',
     write_comment: 'Enter a comment first',
     // Overview
-    no_events: 'Ingen hendelser logget', go_to_log: 'Gå til Logg og registrer steg.',
+    no_events: 'No events logged', go_to_log: 'Go to Log and register steps.',
     chrono_log: 'Chronological event log',
     since_start: 'since start', since_prev: 'since previous event',
     free_note_label: '📝 Note',
@@ -800,14 +800,14 @@ const STRINGS = {
     dl_zip: 'Last ned ZIP (Excel + bilder)', dl_xlsx: 'Kun Excel (.xlsx)', dl_csv: 'Kun CSV',
     editor_card: 'Task Plan Editor', editor_desc: 'Create and edit task plans with illustrations. Opens in new tab.',
     open_editor: 'Åpne Task Plan Editor',
-    reset_card: 'Reset operasjon', reset_btn: 'Nullstill og start ny operasjon',
+    reset_card: 'Reset operation', reset_btn: 'Reset and start new operation',
     // Offline prep
     offline_title: '⚓ Ready for offline',
     offline_desc_pre: 'Do this', offline_desc_bold: 'before you leave', offline_desc_post: 'while you have internet:',
-    offline_step1: '1. Trykk', offline_step1b: 'and point to the Teams/OneDrive folder with task plans',
+    offline_step1: '1. Press', offline_step1b: 'and point to the Teams/OneDrive folder with task plans',
     offline_step2: '2. Select the desired task plan from the dropdown',
-    offline_step3: '3. Trykk', offline_step3b: 'nedenfor',
-    save_offline: 'Lagre valgt plan for offline', clear_offline: 'Tøm buffer', close: 'Lukk',
+    offline_step3: '3. Trykk', offline_step3b: 'below',
+    save_offline: 'Save selected plan for offline', clear_offline: 'Clear buffer', close: 'Close',
     no_offline: 'No plans saved for offline yet',
     select_first: 'Select a task plan first',
     saved_offline: '✓ saved for offline',
@@ -837,8 +837,8 @@ const STRINGS = {
     folder_loaded: 'task plan loaded from folder',
     folder_loaded_pl: 'task plans loaded from folder',
     folder_empty: 'no JSON files found',
-    files_loaded: 'task plan lastet',
-    files_loaded_pl: 'task planer lastet',
+    files_loaded: 'task plan loaded',
+    files_loaded_pl: 'task plans loaded',
     files_none: 'No valid JSON task plans found',
     offline_restored: 'ready for offline',
   },
@@ -1235,7 +1235,7 @@ async function scanFolder(handle) {
   }
   status.textContent = count > 0
     ? `📁 ${handle.name} — ${count} task plan${count !== 1 ? 'er' : ''} lastet`
-    : `📁 ${handle.name} — ingen JSON-filer funnet`;
+    : `📁 ${handle.name} — no JSON files found`;
   if (count > 0) showToast(`${count} task plan${count !== 1 ? 'er' : ''} lastet fra mappe ✓`);
 }
 
@@ -1275,7 +1275,7 @@ function renderOfflineSavedList() {
     const saved = JSON.parse(localStorage.getItem(OFFLINE_PLANS_KEY) || '{}');
     const keys = Object.keys(saved);
     if (!keys.length) {
-      el.innerHTML = '<div style="font-size:11px;color:var(--text3);font-style:italic">Ingen planer lagret for offline ennå</div>';
+      el.innerHTML = '<div style="font-size:11px;color:var(--text3);font-style:italic">No plans saved for offline yet</div>';
       return;
     }
     el.innerHTML = keys.map(k => `
@@ -1391,7 +1391,7 @@ function xlsxToTaskPlan(wb, filename) {
     currentPhase.steps.push({ desc: step, notes: '', illustration: null });
   });
 
-  if (!phases.length) throw new Error('Ingen steg funnet');
+  if (!phases.length) throw new Error('No steps found');
   return { name: planName, ref: planName, phases };
 }
 // ─────────────────────────────────────────────────────────
@@ -1927,7 +1927,7 @@ function renderOverview() {
       <div class="start-screen">
         <div class="icon">📋</div>
         <h2>Ingen hendelser logget</h2>
-        <p>Gå til Logg og registrer steg.</p>
+        <p>Go to Log and register steps.</p>
       </div>`;
     return;
   }
@@ -1943,7 +1943,7 @@ function renderOverview() {
     <div class="sub">${d.project} · ${d.vessel} · ${d.type}</div>
     <div class="tags">
       <span class="tag">Dato: ${d.date}</span>
-      <span class="tag accent">${appState.logs.length} / ${totalSteps} steg logget${appState.freeNotes.length ? ` · ${appState.freeNotes.length} notat` : ''}</span>
+      <span class="tag accent">${appState.logs.length} / ${totalSteps} steps logged${appState.freeNotes.length ? ` · ${appState.freeNotes.length} note` : ''}</span>
     </div>
   </div>`;
 
@@ -2150,7 +2150,7 @@ async function shareLog() {
 
     const shareData = {
       title: `WCU OpLog — ${appState.opData.project || ref}`,
-      text: `Operasjonslogg: ${appState.opData.type || ''} · ${appState.opData.vessel || ''} · ${date}\n${appState.logs.length} steg logget, ${appState.freeNotes.length} notater, ${appState.images.length} bilder.`,
+      text: `Operation log: ${appState.opData.type || ''} · ${appState.opData.vessel || ''} · ${date}\n${appState.logs.length} steps logged, ${appState.freeNotes.length} notes, ${appState.images.length} images.`,
       files: [file]
     };
 
@@ -2178,7 +2178,7 @@ function resetOperation() {
   document.getElementById('start-btn-area').innerHTML = `
     <button class="btn btn-primary" onclick="startOperation()">
       <svg style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
-      Start operasjon
+      Start operation
     </button>`;
   switchTab('setup');
 }
@@ -2223,8 +2223,8 @@ if (restoreState()) {
   document.getElementById('live-badge').style.display = 'flex';
   document.getElementById('start-btn-area').innerHTML = `
     <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:6px">⚡ Pågående operasjon gjenopprettet</div>
-      <div style="font-size:12px;color:var(--text2)">${appState.opData.project || ''} · ${appState.logs.length} steg logget</div>
+      <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:6px">⚡ Ongoing operation restored</div>
+      <div style="font-size:12px;color:var(--text2)">${appState.opData.project || ''} · ${appState.logs.length} steps logged</div>
     </div>
     <button class="btn btn-outline" onclick="switchTab('log')" style="color:var(--green);border-color:rgba(15,186,116,.3);margin-bottom:8px">
       <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
