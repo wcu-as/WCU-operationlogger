@@ -519,12 +519,11 @@ textarea { resize: none; }
       Task Plan
     </div>
 
-    <!-- Dropdown populated from folder/GitHub -->
+    <!-- Dropdown populated from folder/file -->
     <div class="field">
       <label>Select task plan</label>
       <select id="taskplan-select" onchange="selectFromDropdown(this.value)">
         <option value="">— Select task plan —</option>
-        <option value="__builtin_SOP_005-101">SOP_005-101 · Coflexip Deployment (built-in)</option>
       </select>
     </div>
 
@@ -939,82 +938,6 @@ function t(key) {
 }
 // ─────────────────────────────────────────────────────────
 
-const TASK_PLANS = {
-  "SOP_005-101": {
-    name: "Coflexip Deployment — Deck Winch",
-    phases: [
-      {
-        name: "5.1 Pre-operation",
-        steps: [
-          { desc: "Snatch blocks installed according to rigging drawing", notes: "", illustration: null },
-          { desc: "Chute deployed according to lift plan and rigging drawing", notes: "", illustration: null },
-          { desc: "Chute rigging disconnected and secured shipside with carabiner", notes: "", illustration: null },
-          { desc: "Pre-operation check completed on deck winch", notes: "", illustration: null },
-          { desc: "Max pressure on HPU adjusted — confirm pull force with load cell", notes: "", illustration: null },
-          { desc: "Pay out on winch to sufficient length for threading through snatch blocks", notes: "", illustration: null },
-          { desc: "Rope threaded from winch through snatch block at chute anchor point — confirm seated in groove", notes: "", illustration: null },
-          { desc: "Rope threaded through snatch block on IMR-reel top frame — confirm seated and locked", notes: "", illustration: null },
-          { desc: "Crane connected to IMR-hose rigging", notes: "", illustration: null },
-          { desc: "Crane lifts and tensions with 100T", notes: "", illustration: null },
-          { desc: "Sea fastenings on IMR-stab removed", notes: "", illustration: null },
-          { desc: "Crane lifts and swings overboard", notes: "", illustration: null }
-        ]
-      },
-      {
-        name: "5.2 Buoyancy into spooling device",
-        steps: [
-          { desc: "IMR-reel reeled out carefully", notes: "", illustration: null },
-          { desc: "Sufficient slack reeled out — crane lowers IMR-hose towards chute, standby", notes: "", illustration: null },
-          { desc: "IMR-reel isolated — Emergency Stop activated", notes: "", illustration: null },
-          { desc: "Enter IMR-reel through access door", notes: "", illustration: null },
-          { desc: "3T 2m soft sling placed around buoyancy in choke configuration — confirm sling sits tight", notes: "", illustration: null },
-          { desc: "Winch hook attached to choke loop per rigging drawing — confirm hook lip is secured/locked", notes: "", illustration: null },
-          { desc: "Exit IMR-reel through access door", notes: "", illustration: null },
-          { desc: "Confirm all personnel are outside snapback zone", notes: "HSE critical — no personnel in snapback zone during pull", illustration: null },
-          { desc: "Take in slack on winch rope until slight tension — confirm rope runs freely in snatch block", notes: "", illustration: null },
-          { desc: "Winch assists reel operator with entering buoyancy into spooling device", notes: "", illustration: null },
-          { desc: "When rope angle is in neutral position — winch operator pays out and holds slack", notes: "", illustration: null },
-          { desc: "Controlled STOP — disconnect winch and secure winch hook", notes: "", illustration: null }
-        ]
-      },
-      {
-        name: "5.3 Hose deployment — Step and Grip",
-        steps: [
-          { desc: "Deployment stopped — initiating step-and-grip cycle", notes: "", illustration: null },
-          { desc: "Isolate winch and IMR-reel", notes: "", illustration: null },
-          { desc: "Enter IMR-reel through access door", notes: "", illustration: null },
-          { desc: "Disconnect and remove winch rope from IMR-reel snatch block", notes: "", illustration: null },
-          { desc: "Exit IMR-reel through access door", notes: "", illustration: null },
-          { desc: "Reposition soft sling near IMR-reel spooling device — confirm choke is secure", notes: "", illustration: null },
-          { desc: "Winch hook attached to choke loop — confirm hook lip locked", notes: "", illustration: null },
-          { desc: "Confirm all personnel outside snapback zone", notes: "HSE critical — no personnel in snapback zone during pull", illustration: null },
-          { desc: "Winch operator engages winch slowly — controlled, even pull speed", notes: "", illustration: null },
-          { desc: "IMR-reel operator follows up and avoids too much slack", notes: "", illustration: null },
-          { desc: "Deck Sup. monitors hose, sling, snatch block and rope continuously", notes: "", illustration: null },
-          { desc: "Continue pulling until: (a) max rope travel, OR (b) sling within 0.5m of snatch block — STOP", notes: "", illustration: null },
-          { desc: "Winch operator stops — brake engaged — rope retains some tension", notes: "", illustration: null },
-          { desc: "IMR-reel operator STOP — Emergency Stop activated", notes: "", illustration: null },
-          { desc: "SLACK signal — winch operator pays out rope to slack", notes: "", illustration: null },
-          { desc: "Reposition soft sling — confirm choke secure", notes: "", illustration: null },
-          { desc: "Zones clear confirmed — PULL signal given", notes: "", illustration: null },
-          { desc: "Cycle complete — hose deploys on its own OR end position reached", notes: "", illustration: null }
-        ]
-      },
-      {
-        name: "5.4 Rig down",
-        steps: [
-          { desc: "Sufficient hose length out — STOP signal — winch stops and brake set", notes: "", illustration: null },
-          { desc: "Slack winch rope", notes: "", illustration: null },
-          { desc: "Soft sling disconnected from hose", notes: "", illustration: null },
-          { desc: "De-rig deck winch rope — all rigging equipment recovered", notes: "", illustration: null },
-          { desc: "Post-operation log entry completed: time, deviations and near-misses", notes: "", illustration: null },
-          { desc: "Any incidents or near-misses reported in WCU QHSE system", notes: "", illustration: null }
-        ]
-      }
-    ]
-  }
-};
-
 let appState = {
   started: false,
   startTime: null,
@@ -1093,12 +1016,7 @@ let folderHandle = null;
 // Dropdown selection
 function selectFromDropdown(val) {
   if (!val) return;
-  if (val.startsWith('__builtin_')) {
-    const ref = val.replace('__builtin_', '');
-    appState.taskPlan = TASK_PLANS[ref] || null;
-    if (appState.taskPlan) showTaskPlanLoaded(appState.taskPlan.name);
-    document.getElementById('op-ref').value = ref;
-  } else if (taskPlanLibrary[val]) {
+  if (taskPlanLibrary[val]) {
     appState.taskPlan = taskPlanLibrary[val];
     showTaskPlanLoaded(appState.taskPlan.name);
     document.getElementById('op-ref').value = appState.taskPlan.ref || val;
@@ -1143,13 +1061,6 @@ function updateTabLabels() {
   if (folderLabel) folderLabel.textContent = isSafari() ? t('pick_files') : t('pick_folder');
 }
 
-// Keep old function name for compatibility
-function selectBuiltinPlan(ref) {
-  if (!ref) return;
-  appState.taskPlan = TASK_PLANS[ref] || null;
-  if (appState.taskPlan) showTaskPlanLoaded(appState.taskPlan.name);
-  document.getElementById('op-ref').value = ref;
-}
 
 function showTaskPlanLoaded(name) {
   const el = document.getElementById('taskplan-loaded');
@@ -2180,16 +2091,53 @@ async function shareLog() {
 }
 
 function resetOperation() {
-  if (!confirm(t('reset_confirm'))) return;
-  appState = { started: false, startTime: null, opData: {}, logs: [], freeNotes: [], images: [], activeComment: null, commentDraft: '', taskPlan: null, freeNoteOpen: false, freeNoteDraft: '', pendingImageKey: null };
+  if (!confirm('Reset and start new operation? Export the log first!')) return;
+
+  // Clear all app state
+  appState = {
+    started: false, startTime: null, opData: {}, logs: [], freeNotes: [], images: [],
+    activeComment: null, commentDraft: '', taskPlan: null, freeNoteOpen: false,
+    freeNoteDraft: '', pendingImageKey: null, logView: 'focus', focusIdx: 0
+  };
+
+  // Clear all localStorage
   localStorage.removeItem(SAVE_KEY);
+  localStorage.removeItem(OFFLINE_PLANS_KEY);
+  localStorage.removeItem(TASKPLAN_CACHE_KEY);
+
+  // Reset dropdown — keep only the blank option
+  const sel = document.getElementById('taskplan-select');
+  while (sel.options.length > 1) sel.remove(1);
+  sel.value = '';
+
+  // Hide task plan status indicators
+  const loaded = document.getElementById('taskplan-loaded');
+  if (loaded) loaded.style.display = 'none';
+  const fstatus = document.getElementById('folder-status');
+  if (fstatus) fstatus.style.display = 'none';
+  const offlineModal = document.getElementById('offline-prep-modal');
+  if (offlineModal) offlineModal.style.display = 'none';
+
+  // Reset form to defaults
+  document.getElementById('op-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('op-project').value = 'Shell - DeepOcean - AOR Brent 2026';
+  document.getElementById('op-vessel').value = 'Siri Knutsen';
+  document.getElementById('op-type').value = 'Hose Deployment';
+  document.getElementById('op-ref').value = '';
+  ['proj-eng','sup-day','sup-night','op-day1','op-day2','op-night1','op-night2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
   document.getElementById('live-badge').style.display = 'none';
   document.getElementById('start-btn-area').innerHTML = `
     <button class="btn btn-primary" onclick="startOperation()">
       <svg style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
       Start operation
     </button>`;
+
   switchTab('setup');
+  showToast('Operation reset — load a task plan to begin ✓');
 }
 
 function showToast(msg, err) {
