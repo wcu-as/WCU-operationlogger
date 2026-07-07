@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'wcu-oplog-v13';
+const CACHE_VERSION = 'wcu-oplog-v15';
 const ASSETS = [
   '/WCU-operationlogger/',
   '/WCU-operationlogger/index.html',

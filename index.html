@@ -9,6 +9,64 @@
 <meta name="theme-color" content="#0a1628">
 <link rel="manifest" href="manifest.json">
 <title>WCU Operation Log</title>
+<script>
+// PIN functions must be available immediately — defined before body renders
+const _PIN = '2025';
+const _SKEY = 'wcu_unlocked';
+var _pinEntry = '';
+
+function pinKey(digit) {
+  if (_pinEntry.length >= 4) return;
+  _pinEntry += digit;
+  _updateDots();
+  if (_pinEntry.length === 4) setTimeout(_checkPin, 120);
+}
+
+function pinDel() {
+  _pinEntry = _pinEntry.slice(0, -1);
+  _updateDots();
+  var el = document.getElementById('lock-error');
+  if (el) el.textContent = '';
+}
+
+function _updateDots(state) {
+  for (var i = 0; i < 4; i++) {
+    var d = document.getElementById('dot-' + i);
+    if (!d) continue;
+    d.className = 'pin-dot';
+    if (state === 'error') d.classList.add('error');
+    else if (i < _pinEntry.length) d.classList.add('filled');
+  }
+}
+
+function _checkPin() {
+  if (_pinEntry === _PIN) {
+    try { sessionStorage.setItem(_SKEY, '1'); } catch(e) {}
+    var ls = document.getElementById('lockscreen');
+    if (ls) ls.style.display = 'none';
+  } else {
+    _updateDots('error');
+    var el = document.getElementById('lock-error');
+    if (el) el.textContent = 'Feil PIN — prøv igjen';
+    setTimeout(function() {
+      _pinEntry = '';
+      _updateDots();
+      var el2 = document.getElementById('lock-error');
+      if (el2) el2.textContent = '';
+    }, 900);
+  }
+}
+
+// Check session on load
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    if (sessionStorage.getItem(_SKEY) === '1') {
+      var ls = document.getElementById('lockscreen');
+      if (ls) ls.style.display = 'none';
+    }
+  } catch(e) {}
+});
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -691,54 +749,10 @@ textarea { resize: none; }
 <input type="file" id="img-file-input" accept="image/*" style="display:none" onchange="handleImageFile(event)">
 
 <script>
-// ── PIN LOCK ──────────────────────────────────────────────
-const CORRECT_PIN = '2025';          // ← endre app-PIN her
-const SESSION_KEY = 'wcu_unlocked';  // cleared when tab closes
+// ── APP CONSTANTS ─────────────────────────────────────────
+const CORRECT_PIN = _PIN;
+const SESSION_KEY = _SKEY;
 const EDITOR_URL = 'WCU-TaskPlanEditor.html';
-
-let pinEntry = '';
-
-function pinKey(digit) {
-  if (pinEntry.length >= 4) return;
-  pinEntry += digit;
-  updateDots();
-  if (pinEntry.length === 4) setTimeout(checkPin, 120);
-}
-
-function pinDel() {
-  pinEntry = pinEntry.slice(0, -1);
-  updateDots();
-  document.getElementById('lock-error').textContent = '';
-}
-
-function updateDots(state) {
-  for (let i = 0; i < 4; i++) {
-    const d = document.getElementById('dot-' + i);
-    d.className = 'pin-dot';
-    if (state === 'error') d.classList.add('error');
-    else if (i < pinEntry.length) d.classList.add('filled');
-  }
-}
-
-function checkPin() {
-  if (pinEntry === CORRECT_PIN) {
-    sessionStorage.setItem(SESSION_KEY, '1');
-    document.getElementById('lockscreen').style.display = 'none';
-  } else {
-    updateDots('error');
-    document.getElementById('lock-error').textContent = 'Feil PIN — prøv igjen';
-    setTimeout(() => {
-      pinEntry = '';
-      updateDots();
-      document.getElementById('lock-error').textContent = '';
-    }, 900);
-  }
-}
-
-// Check if already unlocked this session
-if (sessionStorage.getItem(SESSION_KEY) === '1') {
-  document.getElementById('lockscreen').style.display = 'none';
-}
 
 // ── LANGUAGE SYSTEM ───────────────────────────────────────
 const STRINGS = {
@@ -761,14 +775,14 @@ const STRINGS = {
     op_type_deploy: 'Coflexip Deployment', op_type_recovery: 'Coflexip Recovery', op_type_other: 'Annet',
     start_op: 'Start operasjon', op_running: 'Operasjon pågår — gå til logg',
     // Log
-    elapsed: 'Tid ${t('since_start')}', steps_of: 'steg', notes_count: 'notat',
+    elapsed: 'Tid siden start', steps_of: 'steg', notes_count: 'notat',
     focus: 'Fokus', list: 'Liste',
     log_btn: 'Logg tidspunkt', logged_next: 'Logget — neste steg',
     comment_ph: 'Kommentar for dette steget...', note_ph: 'Avvik, observasjon, hendelse...',
     save: 'Lagre', cancel: 'Avbryt', log_note: 'Logg notat',
-    add_free_note: 'Legg til fritekst-notat', free_note_title: t('free_note_label'),
+    add_free_note: 'Legg til fritekst-notat', free_note_title: 'Fritekst-notat',
     step_of: 'Steg', of: 'av', phase_label: 'Fase',
-    last_step: '${t('last_step')}',
+    last_step: '✓ Siste steg i operasjonen',
     prev_step: '↑ Steg', next_step: '↓ Steg',
     swipe_hint: 'Sveip opp/ned for å navigere',
     comment_saved: 'Kommentar lagret ✓', note_logged: 'Notat logget ✓',
@@ -776,7 +790,7 @@ const STRINGS = {
     // Overview
     no_events: 'Ingen hendelser logget', go_to_log: 'Gå til Logg og registrer steg.',
     chrono_log: 'Kronologisk hendelseslogg',
-    since_start: '${t('since_start')}', since_prev: '${t('since_prev')}',
+    since_start: 'siden start', since_prev: 'siden forrige hendelse',
     free_note_label: '📝 Notat',
     // Export
     share_export: 'Del og eksporter',
