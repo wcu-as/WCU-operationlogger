@@ -1,5 +1,5 @@
 // v21 — network-first for everything, no HTML caching
-const CACHE = 'wcu-oplog-v22';
+const CACHE = 'wcu-oplog-v23';
 const STATIC = [
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'

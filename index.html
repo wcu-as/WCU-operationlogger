@@ -1,4 +1,4 @@
-<!-- WCU OpLogger v22 — 2026-07-07b -->
+<!-- WCU OpLogger v23 — 2026-07-07c -->
 <!DOCTYPE html>
 <html lang="no">
 <head>
@@ -2103,19 +2103,24 @@ function resetOperation() {
   // Clear operation state only — keep offline plans and task plan library
   localStorage.removeItem(SAVE_KEY);
 
-  // Re-add offline plans back to dropdown
-  restoreOfflinePlans();
-
-  // Reset dropdown — keep only the blank option
+  // Reset dropdown first — keep only blank option
   const sel = document.getElementById('taskplan-select');
   while (sel.options.length > 1) sel.remove(1);
   sel.value = '';
 
-  // Hide task plan status indicators
-  const loaded = document.getElementById('taskplan-loaded');
-  if (loaded) loaded.style.display = 'none';
-  const fstatus = document.getElementById('folder-status');
-  if (fstatus) fstatus.style.display = 'none';
+  // Now re-populate with offline plans
+  restoreOfflinePlans();
+
+  // If task plan was loaded, keep it selected
+  if (appState.taskPlan) {
+    const loaded = document.getElementById('taskplan-loaded');
+    if (loaded) {
+      loaded.style.display = 'block';
+      loaded.textContent = '✓ Loaded: ' + appState.taskPlan.name;
+    }
+  }
+
+  // Hide offline modal only
   const offlineModal = document.getElementById('offline-prep-modal');
   if (offlineModal) offlineModal.style.display = 'none';
 
