@@ -1349,18 +1349,17 @@ function formatElapsed(ms) {
 function startOperation() {
   const d = getOpData();
   if (!d.project) { showToast('Please enter a project name', true); return; }
+  if (!appState.taskPlan) { showToast('Please select a task plan first', true); return; }
   appState.opData = d;
   appState.startTime = new Date();
   appState.started = true;
-  const ref = d.ref || 'SOP_005-101';
-  appState.taskPlan = TASK_PLANS[ref] || TASK_PLANS['SOP_005-101'];
   appState.focusIdx = 0;
   appState.logView = 'focus';
   document.getElementById('live-badge').style.display = 'flex';
   document.getElementById('start-btn-area').innerHTML = `
     <button class="btn btn-outline" onclick="switchTab('log')" style="color:var(--green);border-color:rgba(15,186,116,.3)">
       <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
-      Operasjon pågår — gå til logg
+      Operation in progress — go to log
     </button>`;
   switchTab('log');
   renderLog();
@@ -2100,10 +2099,11 @@ function resetOperation() {
     freeNoteDraft: '', pendingImageKey: null, logView: 'focus', focusIdx: 0
   };
 
-  // Clear all localStorage
+  // Clear operation state only — keep offline plans and task plan library
   localStorage.removeItem(SAVE_KEY);
-  localStorage.removeItem(OFFLINE_PLANS_KEY);
-  localStorage.removeItem(TASKPLAN_CACHE_KEY);
+
+  // Re-add offline plans back to dropdown
+  restoreOfflinePlans();
 
   // Reset dropdown — keep only the blank option
   const sel = document.getElementById('taskplan-select');
@@ -2185,7 +2185,7 @@ if (restoreState()) {
     </div>
     <button class="btn btn-outline" onclick="switchTab('log')" style="color:var(--green);border-color:rgba(15,186,116,.3);margin-bottom:8px">
       <svg style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
-      Fortsett operasjon
+      Continue operation
     </button>`;
   // Restore form fields
   const d = appState.opData;
