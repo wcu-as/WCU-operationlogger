@@ -1,4 +1,4 @@
-<!-- WCU OpLogger v23 — 2026-07-07c -->
+<!-- WCU OpLogger v24 — 2026-07-07d -->
 <!DOCTYPE html>
 <html lang="no">
 <head>
@@ -1116,9 +1116,10 @@ async function loadMultipleJSONFiles(e) {
       const text = await file.text();
       const plan = JSON.parse(text);
       if (plan.phases) {
+        plan._filename = file.name;
         const key = `folder_${file.name}`;
         taskPlanLibrary[key] = plan;
-        const label = `${plan.ref || ''} · ${plan.name || file.name}`.replace(/^·\s*/, '');
+        const label = `${plan.ref || plan.name || file.name} — ${file.name}`;
         addToDropdown(key, label);
         count++;
       }
@@ -1143,9 +1144,10 @@ async function scanFolder(handle) {
         const text = await file.text();
         const plan = JSON.parse(text);
         if (plan.phases) {
+          plan._filename = entry.name;
           const key = `folder_${entry.name}`;
           taskPlanLibrary[key] = plan;
-          const label = `${plan.ref || ''} · ${plan.name || entry.name}`.replace(/^·\s*/, '');
+          const label = `${plan.ref || plan.name || entry.name} — ${entry.name}`;
           addToDropdown(key, label);
           count++;
         }
@@ -1180,7 +1182,8 @@ function saveCurrentPlanOffline() {
     // Also add to dropdown if not already there
     const dropKey = `offline_${key}`;
     taskPlanLibrary[dropKey] = appState.taskPlan;
-    const label = `${appState.taskPlan.ref || ''} · ${appState.taskPlan.name}`.replace(/^·\s*/, '') + ' ✓ offline';
+    const fname = appState.taskPlan._filename || key;
+    const label = `${appState.taskPlan.ref || appState.taskPlan.name} — ${fname} ✓ offline`;
     addToDropdown(dropKey, label);
     renderOfflineSavedList();
     showToast(`"${appState.taskPlan.name}" lagret for offline ✓`);
@@ -1243,7 +1246,8 @@ function restoreOfflinePlans() {
       if (!plan.phases) return;
       const dropKey = `offline_${k}`;
       taskPlanLibrary[dropKey] = plan;
-      const label = `${plan.ref || ''} · ${plan.name}`.replace(/^·\s*/, '') + ' ✓ offline';
+      const fname = plan._filename || k;
+      const label = `${plan.ref || plan.name} — ${fname} ✓ offline`;
       addToDropdown(dropKey, label);
     });
     return keys.length;
