@@ -476,7 +476,7 @@ textarea { resize: none; }
       </button>
       <button class="btn btn-outline" onclick="prepareOffline()" style="font-size:12px;padding:8px;color:var(--amber);border-color:rgba(245,158,11,.3)">
         <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Klar for offshore
+        Forbered for offline
       </button>
     </div>
 
@@ -484,7 +484,7 @@ textarea { resize: none; }
 
     <!-- Offline prep modal -->
     <div id="offline-prep-modal" style="display:none;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:8px">⚓ Forbered for offshore (uten nett)</div>
+      <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:8px">⚓ Klar for offline</div>
       <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px">
         Gjør dette <strong style="color:var(--text)">før du drar</strong> mens du har nett:<br>
         1. Trykk <strong style="color:var(--text)">Velg mappe</strong> og pek til Teams/OneDrive-mappen med task plans<br>
@@ -1943,7 +1943,7 @@ if (offlinePlanCount > 0) {
   const status = document.getElementById('folder-status');
   if (status) {
     status.style.display = 'block';
-    status.textContent = `⚓ ${offlinePlanCount} task plan${offlinePlanCount !== 1 ? 'er' : ''} klar for offline-bruk`;
+    status.textContent = `⚓ ${offlinePlanCount} task plan${offlinePlanCount !== 1 ? 'er' : ''} klar for offline`;
   }
 }
 if (restoreState()) {
