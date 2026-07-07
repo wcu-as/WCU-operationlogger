@@ -474,13 +474,33 @@ textarea { resize: none; }
         <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
         Velg mappe
       </button>
-      <button class="btn btn-outline" onclick="loadFromGitHub()" style="font-size:12px;padding:8px">
-        <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
-        Hent fra GitHub
+      <button class="btn btn-outline" onclick="prepareOffline()" style="font-size:12px;padding:8px;color:var(--amber);border-color:rgba(245,158,11,.3)">
+        <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Klar for offshore
       </button>
     </div>
 
     <div id="folder-status" style="display:none;font-size:11px;color:var(--text2);margin-bottom:8px;padding:6px 10px;background:var(--surface2);border-radius:var(--radius)"></div>
+
+    <!-- Offline prep modal -->
+    <div id="offline-prep-modal" style="display:none;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:8px">⚓ Forbered for offshore (uten nett)</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px">
+        Gjør dette <strong style="color:var(--text)">før du drar</strong> mens du har nett:<br>
+        1. Trykk <strong style="color:var(--text)">Velg mappe</strong> og pek til Teams/OneDrive-mappen med task plans<br>
+        2. Velg ønsket task plan fra nedtrekksmenyen<br>
+        3. Trykk <strong style="color:var(--text)">Lagre for offline</strong> nedenfor
+      </div>
+      <div id="offline-saved-list" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-small primary" onclick="saveCurrentPlanOffline()" style="font-size:12px">
+          <svg style="width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+          Lagre valgt plan for offline
+        </button>
+        <button class="btn-small" onclick="clearOfflinePlans()" style="color:var(--red);border-color:rgba(248,81,73,.3)">Tøm buffer</button>
+        <button class="btn-small" onclick="document.getElementById('offline-prep-modal').style.display='none'">Lukk</button>
+      </div>
+    </div>
 
     <div style="display:flex;align-items:center;gap:10px;margin:8px 0">
       <div style="flex:1;height:1px;background:var(--border)"></div>
@@ -864,13 +884,10 @@ function wrapSave(fn) {
 
 // ── TASK PLAN LOADING ────────────────────────────────────
 
-// GitHub config — task plans stored in task-plans/ folder in same repo
-const GITHUB_TASK_PLANS_URL = 'https://api.github.com/repos/wcu-as/WCU-operationlogger/contents/task-plans';
-const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/wcu-as/WCU-operationlogger/main/task-plans/';
-
-// In-memory store of loaded plans {name, ref, plan}
+// GitHub config removed — task plans stored in Teams/OneDrive
+const TASKPLAN_CACHE_KEY = 'wcu_taskplan_library'; // kept for migration
 let taskPlanLibrary = {};
-let folderHandle = null; // File System Access API handle
+let folderHandle = null;
 
 // Dropdown selection
 function selectFromDropdown(val) {
@@ -903,14 +920,12 @@ function showTaskPlanLoaded(name) {
 
 function addToDropdown(key, label) {
   const sel = document.getElementById('taskplan-select');
-  // Remove existing option with same key
   const existing = sel.querySelector(`option[value="${key}"]`);
-  if (existing) existing.remove();
+  if (existing) { existing.textContent = label; return; }
   const opt = document.createElement('option');
   opt.value = key;
   opt.textContent = label;
   sel.appendChild(opt);
-  sel.value = key;
 }
 
 // ── FOLDER PICKER (File System Access API) ───────────────
@@ -954,41 +969,96 @@ async function scanFolder(handle) {
   if (count > 0) showToast(`${count} task plan${count !== 1 ? 'er' : ''} lastet fra mappe ✓`);
 }
 
-// ── GITHUB LOADER ─────────────────────────────────────────
-async function loadFromGitHub() {
-  const status = document.getElementById('folder-status');
-  status.style.display = 'block';
-  status.textContent = 'Henter fra GitHub...';
+// ── OFFLINE PREP ──────────────────────────────────────────
+const OFFLINE_PLANS_KEY = 'wcu_offline_plans';
+
+function prepareOffline() {
+  const modal = document.getElementById('offline-prep-modal');
+  modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+  renderOfflineSavedList();
+}
+
+function saveCurrentPlanOffline() {
+  if (!appState.taskPlan) {
+    showToast('Velg en task plan først', true);
+    return;
+  }
   try {
-    const res = await fetch(GITHUB_TASK_PLANS_URL);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const files = await res.json();
-    const jsonFiles = files.filter(f => f.name.endsWith('.json'));
-    if (!jsonFiles.length) {
-      status.textContent = '⚠️ Ingen task plans funnet i task-plans/ på GitHub';
+    const saved = JSON.parse(localStorage.getItem(OFFLINE_PLANS_KEY) || '{}');
+    const key = appState.taskPlan.ref || appState.taskPlan.name;
+    saved[key] = appState.taskPlan;
+    localStorage.setItem(OFFLINE_PLANS_KEY, JSON.stringify(saved));
+    // Also add to dropdown if not already there
+    const dropKey = `offline_${key}`;
+    taskPlanLibrary[dropKey] = appState.taskPlan;
+    const label = `${appState.taskPlan.ref || ''} · ${appState.taskPlan.name}`.replace(/^·\s*/, '') + ' ✓ offline';
+    addToDropdown(dropKey, label);
+    renderOfflineSavedList();
+    showToast(`"${appState.taskPlan.name}" lagret for offline ✓`);
+  } catch(e) { showToast('Kunne ikke lagre — lagringsplass full?', true); }
+}
+
+function renderOfflineSavedList() {
+  const el = document.getElementById('offline-saved-list');
+  if (!el) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem(OFFLINE_PLANS_KEY) || '{}');
+    const keys = Object.keys(saved);
+    if (!keys.length) {
+      el.innerHTML = '<div style="font-size:11px;color:var(--text3);font-style:italic">Ingen planer lagret for offline ennå</div>';
       return;
     }
-    let count = 0;
-    await Promise.all(jsonFiles.map(async f => {
-      try {
-        const raw = await fetch(GITHUB_RAW_BASE + f.name);
-        const plan = await raw.json();
-        if (plan.phases) {
-          const key = `github_${f.name}`;
-          taskPlanLibrary[key] = plan;
-          const label = `${plan.ref || ''} · ${plan.name || f.name}`.replace(/^·\s*/, '');
-          addToDropdown(key, label);
-          count++;
-        }
-      } catch {}
-    }));
-    status.textContent = `🌐 GitHub — ${count} task plan${count !== 1 ? 'er' : ''} lastet`;
-    if (count > 0) showToast(`${count} task plan${count !== 1 ? 'er' : ''} lastet fra GitHub ✓`);
-    else status.textContent = '⚠️ Fant filer men ingen gyldige task plans';
-  } catch(e) {
-    status.textContent = '⚠️ Kunne ikke nå GitHub — sjekk nettverkstilgang';
-    showToast('GitHub-henting feilet', true);
-  }
+    el.innerHTML = keys.map(k => `
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <svg style="width:12px;height:12px;stroke:var(--green);fill:none;stroke-width:2.5;flex-shrink:0" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        <span style="flex:1;font-size:11px;color:var(--text)">${saved[k].name || k}</span>
+        <span style="font-size:10px;color:var(--text3)">${(saved[k].phases||[]).reduce((a,p)=>a+p.steps.length,0)} steg</span>
+        <button onclick="removeOfflinePlan('${k}')" style="background:none;border:none;cursor:pointer;color:var(--text3);padding:0">
+          <svg style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`).join('');
+  } catch {}
+}
+
+function removeOfflinePlan(key) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(OFFLINE_PLANS_KEY) || '{}');
+    delete saved[key];
+    localStorage.setItem(OFFLINE_PLANS_KEY, JSON.stringify(saved));
+    delete taskPlanLibrary[`offline_${key}`];
+    const sel = document.getElementById('taskplan-select');
+    const opt = sel.querySelector(`option[value="offline_${key}"]`);
+    if (opt) opt.remove();
+    renderOfflineSavedList();
+    showToast('Plan fjernet fra offline-buffer');
+  } catch {}
+}
+
+function clearOfflinePlans() {
+  if (!confirm('Tøm alle offline-lagrede task plans?')) return;
+  localStorage.removeItem(OFFLINE_PLANS_KEY);
+  // Remove from dropdown
+  const sel = document.getElementById('taskplan-select');
+  sel.querySelectorAll('option[value^="offline_"]').forEach(o => o.remove());
+  Object.keys(taskPlanLibrary).filter(k => k.startsWith('offline_')).forEach(k => delete taskPlanLibrary[k]);
+  renderOfflineSavedList();
+  showToast('Offline-buffer tømt');
+}
+
+function restoreOfflinePlans() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(OFFLINE_PLANS_KEY) || '{}');
+    const keys = Object.keys(saved);
+    keys.forEach(k => {
+      const plan = saved[k];
+      if (!plan.phases) return;
+      const dropKey = `offline_${k}`;
+      taskPlanLibrary[dropKey] = plan;
+      const label = `${plan.ref || ''} · ${plan.name}`.replace(/^·\s*/, '') + ' ✓ offline';
+      addToDropdown(dropKey, label);
+    });
+    return keys.length;
+  } catch { return 0; }
 }
 
 function loadTaskPlanFile(e) {
@@ -1867,6 +1937,15 @@ if (!navigator.share) {
 }
 
 // ── RESTORE saved state on load ───────────────────────────
+// Restore offline task plans
+const offlinePlanCount = restoreOfflinePlans();
+if (offlinePlanCount > 0) {
+  const status = document.getElementById('folder-status');
+  if (status) {
+    status.style.display = 'block';
+    status.textContent = `⚓ ${offlinePlanCount} task plan${offlinePlanCount !== 1 ? 'er' : ''} klar for offline-bruk`;
+  }
+}
 if (restoreState()) {
   document.getElementById('live-badge').style.display = 'flex';
   document.getElementById('start-btn-area').innerHTML = `
