@@ -1,4 +1,4 @@
-<!-- WCU OpLogger v26 — 2026-07-13 — fully self-contained, no CDN/network required -->
+<!-- WCU OpLogger v27 — 2026-07-13 — fully self-contained, no CDN/network required -->
 <!DOCTYPE html>
 <html lang="no">
 <head>
@@ -11,6 +11,8 @@
 <link rel="manifest" href="manifest.json">
 <title>WCU Operation Log</title>
 <script>
+// ── APP VERSION — update this one line each release ──
+const APP_VERSION = '27';
 // PIN functions must be available immediately — defined before body renders
 const _PIN = '2025';
 const _SKEY = 'wcu_unlocked';
@@ -60,6 +62,11 @@ function _checkPin() {
 
 // Check session on load
 document.addEventListener('DOMContentLoaded', function() {
+  // Populate version numbers
+  var hv = document.getElementById('app-version');
+  var lv = document.getElementById('lock-version');
+  if (hv) hv.textContent = 'v' + APP_VERSION;
+  if (lv) lv.textContent = APP_VERSION;
   try {
     if (sessionStorage.getItem(_SKEY) === '1') {
       var ls = document.getElementById('lockscreen');
@@ -491,6 +498,7 @@ textarea { resize: none; }
     <div class="lock-logo-mark">WCU</div>
     <h1>Operation Log</h1>
     <p>Well Cleanup AS — internal access only</p>
+    <p style="font-size:11px;color:var(--text3);margin-top:4px">Version <span id="lock-version">27</span></p>
   </div>
   <div class="pin-dots" id="pin-dots">
     <div class="pin-dot" id="dot-0"></div>
@@ -521,7 +529,7 @@ textarea { resize: none; }
     <div class="logo-mark">WCU</div>
     <div>
       <div class="logo-text">Operation Log</div>
-      <div class="logo-sub">Well Cleanup AS</div>
+      <div class="logo-sub">Well Cleanup AS · <span id="app-version">v27</span></div>
     </div>
   </div>
   <div class="live-badge" id="live-badge" style="display:none">
@@ -815,10 +823,11 @@ textarea { resize: none; }
 <div id="camera-modal" style="display:none;position:fixed;inset:0;background:#000;z-index:201;flex-direction:column">
   <video id="camera-video" autoplay playsinline style="flex:1;width:100%;object-fit:cover;background:#000"></video>
   <canvas id="camera-canvas" style="display:none"></canvas>
+  <div id="camera-label" style="position:absolute;top:16px;left:0;right:0;text-align:center;color:#fff;font-size:12px;opacity:.7;pointer-events:none"></div>
   <div style="display:flex;justify-content:center;align-items:center;gap:24px;padding:20px;background:#000">
     <button onclick="closeCamera()" style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;padding:12px">Cancel</button>
     <button onclick="capturePhoto()" style="width:68px;height:68px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,.4);cursor:pointer"></button>
-    <button onclick="switchCamera()" style="background:none;border:none;color:#fff;cursor:pointer;padding:12px">
+    <button id="camera-switch-btn" onclick="switchCamera()" style="background:none;border:none;color:#fff;cursor:pointer;padding:12px">
       <svg style="width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
     </button>
   </div>
@@ -1509,41 +1518,70 @@ function closeImgSourceModal() {
 
 // ── CAMERA CAPTURE (getUserMedia — works on Windows tablets, Android, desktop) ──
 let _cameraStream = null;
-let _cameraFacing = 'environment'; // 'environment' = back camera, 'user' = front
+let _cameraDevices = [];
+let _cameraIndex = 0;
 
 async function openCamera() {
   const modal = document.getElementById('camera-modal');
   modal.style.display = 'flex';
   try {
-    await _startCameraStream(_cameraFacing);
+    // First request permission with a generic stream so labels populate
+    const tmp = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    tmp.getTracks().forEach(t => t.stop());
+
+    // Enumerate all video input devices
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    _cameraDevices = devices.filter(d => d.kind === 'videoinput');
+
+    // Prefer a back/rear camera if one is identifiable by label
+    let startIdx = _cameraDevices.findIndex(d => /back|rear|environment|world/i.test(d.label));
+    if (startIdx === -1) {
+      // No labelled back cam — if there are 2+ cameras, the last is often the rear one
+      startIdx = _cameraDevices.length > 1 ? _cameraDevices.length - 1 : 0;
+    }
+    _cameraIndex = startIdx;
+
+    await _startCameraStream();
+    // Hide switch button if only one camera
+    const sw = document.getElementById('camera-switch-btn');
+    if (sw) sw.style.display = _cameraDevices.length > 1 ? 'block' : 'none';
   } catch (err) {
-    // Fall back to file picker with capture hint if getUserMedia fails/denied
     closeCamera();
     showToast('Camera not available — opening file picker', true);
     const inp = document.getElementById('img-file-input');
-    inp.setAttribute('capture', 'environment');
+    inp.removeAttribute('capture');
     inp.value = '';
     inp.click();
   }
 }
 
-async function _startCameraStream(facing) {
+async function _startCameraStream() {
   if (_cameraStream) {
     _cameraStream.getTracks().forEach(t => t.stop());
   }
+  const dev = _cameraDevices[_cameraIndex];
   const constraints = {
-    video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+    video: dev && dev.deviceId
+      ? { deviceId: { exact: dev.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+      : { width: { ideal: 1920 }, height: { ideal: 1080 } },
     audio: false
   };
   _cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
   const video = document.getElementById('camera-video');
   video.srcObject = _cameraStream;
+  // Label which camera is active
+  const lbl = document.getElementById('camera-label');
+  if (lbl) {
+    const name = (dev && dev.label) ? dev.label : `Camera ${_cameraIndex + 1}`;
+    lbl.textContent = `${name}  (${_cameraIndex + 1}/${_cameraDevices.length})`;
+  }
 }
 
 async function switchCamera() {
-  _cameraFacing = _cameraFacing === 'environment' ? 'user' : 'environment';
+  if (_cameraDevices.length < 2) return;
+  _cameraIndex = (_cameraIndex + 1) % _cameraDevices.length;
   try {
-    await _startCameraStream(_cameraFacing);
+    await _startCameraStream();
   } catch (err) {
     showToast('Could not switch camera', true);
   }

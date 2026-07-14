@@ -2,7 +2,7 @@
 // This service worker only exists to enable "Add to Home Screen" / PWA install
 // and does not need to cache anything — the app works from a single file
 // even without a service worker (e.g. opened via file:// or email attachment).
-const CACHE = 'wcu-oplog-v26';
+const CACHE = 'wcu-oplog-v27';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
